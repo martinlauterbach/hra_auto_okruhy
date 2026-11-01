@@ -61,7 +61,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hud-tl .sub b{color:var(--fg);font-weight:500}
 .hud-tl .sub b.best{color:#c58cff}
 #minimap{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 14px);width:150px;height:150px;background:rgba(10,12,15,.5);border-radius:8px}
-#pauseBtn{pointer-events:auto;position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);width:46px;height:40px;border-radius:8px;border:1px solid var(--line);background:rgba(10,12,15,.55);font-weight:800;font-size:16px;letter-spacing:.1em}
+.topbtns{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.topbtns button{pointer-events:auto;height:40px;min-width:46px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:rgba(10,12,15,.55);font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
 .speedo{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);display:grid;grid-template-columns:auto auto;align-items:end;column-gap:10px;background:rgba(10,12,15,.55);padding:6px 14px 8px;border-radius:10px;font-variant-numeric:tabular-nums}
 #hSpeed{font-size:48px;font-weight:800;line-height:1;min-width:3ch;text-align:right;font-style:italic}
 .speedo .unit{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
@@ -106,7 +107,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div class="sub"><span>Poslední <b id="hLast">–</b></span><span>Nejlepší <b id="hBest" class="best">–</b></span></div>
   </div>
   <canvas id="minimap" width="300" height="300"></canvas>
-  <button id="pauseBtn" aria-label="Pauza">II</button>
+  <div class="topbtns"><button id="camBtn">Kamera</button><button id="pauseBtn" aria-label="Pauza">II</button></div>
   <div class="speedo"><div id="hSpeed">0</div><div class="unit">km/h</div><div id="hGear">N</div><div class="rpm"><i id="hRpm"></i></div></div>
   <div id="countdown"></div>
   <div id="toast"></div>
@@ -120,7 +121,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="menu-inner">
     <header class="brand">
       <h1>Apex <span>Okruhy</span></h1>
-      <p>10 okruhů, zadní náhon, simulace pneumatik. Hraj náklonem, dotykem nebo ovladačem DualSense.</p>
+      <p>10 okruhů, tři úrovně jízdy od dětské po realistickou. Hraj náklonem, dotykem nebo ovladačem DualSense.</p>
     </header>
     <section>
       <h2 class="sec-label">Okruh</h2>
@@ -132,13 +133,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <div class="opt" id="invertRow"><span>Směr náklonu</span><div class="seg" id="optInvert"><button data-v="0">Normální</button><button data-v="1">Obrácený</button></div></div>
       <div class="opt"><span>Počet kol</span><div class="seg" id="optLaps"><button data-v="3">3</button><button data-v="5">5</button><button data-v="0">Volná jízda</button></div></div>
       <div class="opt"><span>Barva vozu</span><div class="swatches" id="optColor"></div></div>
-      <div class="opt"><span>Asistenty</span><div class="seg" id="optAssist"><button data-v="1">Zapnuté</button><button data-v="0">Vypnuté</button></div></div>
+      <div class="opt"><span>Jízda</span><div class="seg" id="optMode"><button data-v="easy">Dětská</button><button data-v="normal">Normální</button><button data-v="sim">Realistická</button></div></div>
+      <div class="opt"><span>Plyn</span><div class="seg" id="optAutogas"><button data-v="0">Ovládám sám</button><button data-v="1">Automaticky</button></div></div>
+      <div class="opt"><span>Kamera</span><div class="seg" id="optCam"><button data-v="0">Za autem</button><button data-v="1">Kokpit s volantem</button><button data-v="2">Z kapoty</button></div></div>
       <div class="opt"><span>Duch</span><div class="seg" id="optGhost"><button data-v="1">Ukázat nejlepší kolo</button><button data-v="0">Skrýt</button></div></div>
       <div class="opt"><span>Zvuk</span><div class="seg" id="optSound"><button data-v="1">Zapnutý</button><button data-v="0">Vypnutý</button></div></div>
     </section>
     <p id="notice" class="notice" hidden></p>
     <button id="startBtn" class="start">Start</button>
-    <p class="help"><b>DualSense:</b> R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
+    <p class="help"><b>Jízda:</b> Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>DualSense:</b> R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
   </div>
 </div>
 
@@ -239,7 +242,7 @@ sun.shadow.mapSize.set(1024, 1024);
 Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 260 });
 sun.shadow.bias = -0.0006;
 scene.add(sun, sun.target);
-const SUN_DIR = new THREE.Vector3(-0.45, 0.8, 0.35).normalize();
+const SUN_DIR = new THREE.Vector3(-0.22, 0.93, 0.18).normalize();
 
 const skyMat = new THREE.ShaderMaterial({
   uniforms: { top: { value: new THREE.Color() }, bot: { value: new THREE.Color() } },
@@ -280,6 +283,7 @@ function groundTex(hex) {
     for (let i = 0; i < 6000; i++) { const k = (R() - 0.5) * 0.22; g.fillStyle = `rgba(${k > 0 ? 255 : 0},${k > 0 ? 255 : 0},${k > 0 ? 255 : 0},${Math.abs(k)})`; g.fillRect(R() * w, R() * h, 2, 2); }
   });
 }
+const blobTex = canvasTex(64, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(0,0,0,.85)'); gr.addColorStop(0.65, 'rgba(0,0,0,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.save(); g.translate(w / 2, h / 2); g.scale(1, h / w); g.translate(-w / 2, -h / 2); g.fillStyle = gr; g.fillRect(0, 0, w, w); g.restore(); }, false);
 const windowTex = canvasTex(64, 128, (g, w, h) => {
   g.fillStyle = '#1a1e26'; g.fillRect(0, 0, w, h);
   const R = rng(3);
@@ -569,20 +573,21 @@ function makeCar(color, ghost = false) {
   const W = 1.86;
   // side profile (x = length, front at +x), extruded across width
   const prof = new THREE.Shape();
-  prof.moveTo(-2.18, 0.34); prof.lineTo(-2.22, 0.78); prof.lineTo(-2.0, 0.92); prof.lineTo(-1.2, 0.95);
-  prof.lineTo(1.0, 0.9); prof.lineTo(1.75, 0.78); prof.lineTo(2.22, 0.58); prof.lineTo(2.28, 0.4); prof.lineTo(2.1, 0.3); prof.lineTo(-2.05, 0.3);
+  prof.moveTo(-2.18, 0.28); prof.lineTo(-2.22, 0.78); prof.lineTo(-2.0, 0.92); prof.lineTo(-1.2, 0.95);
+  prof.lineTo(1.0, 0.9); prof.lineTo(1.75, 0.78); prof.lineTo(2.22, 0.58); prof.lineTo(2.28, 0.4); prof.lineTo(2.1, 0.22); prof.lineTo(-2.05, 0.22);
   const ext = (shape, depth, bevel) => { const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 2, curveSegments: 4 }); g.translate(0, 0, -depth / 2); g.rotateY(-Math.PI / 2); return g; };
   const bodyM = new THREE.Mesh(ext(prof, W - 0.16, 0.08), paint); body.add(bodyM);
   const cab = new THREE.Shape();
   cab.moveTo(-1.55, 0.9); cab.lineTo(-0.95, 1.33); cab.lineTo(0.25, 1.35); cab.lineTo(1.05, 0.88);
   const cabM = new THREE.Mesh(ext(cab, 1.38, 0.06), glass); body.add(cabM);
+  const cabin = new THREE.Group(); body.add(cabin);
   const roofS = new THREE.Shape(); roofS.moveTo(-0.9, 1.3); roofS.lineTo(0.2, 1.31); roofS.lineTo(0.15, 1.37); roofS.lineTo(-0.85, 1.36);
-  body.add(new THREE.Mesh(ext(roofS, 1.3, 0.04), paint));
+  cabin.add(new THREE.Mesh(ext(roofS, 1.3, 0.04), paint)); cabin.add(cabM);
   // spoiler
   const wing = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.06, 0.38), dark); wing.position.set(0, 1.18, -1.98); body.add(wing);
   for (const s of [-0.55, 0.55]) { const st = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.24, 0.16), dark); st.position.set(s, 1.03, -1.95); body.add(st); }
   // splitter & diffuser
-  const spl = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.06, 0.4), dark); spl.position.set(0, 0.28, 2.1); body.add(spl);
+  const spl = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.06, 0.4), dark); spl.position.set(0, 0.22, 2.1); body.add(spl);
   const dif = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 0.2), dark); dif.position.set(0, 0.36, -2.22); body.add(dif);
   // lights
   const headM = ghost ? paint : new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff4dc, emissiveIntensity: 1.2 });
@@ -598,23 +603,60 @@ function makeCar(color, ghost = false) {
   }
   body.traverse(m => { if (m.isMesh) { m.castShadow = !ghost; } });
   // wheels
-  const tyreG = new THREE.CylinderGeometry(0.34, 0.34, 0.28, 18); tyreG.rotateZ(Math.PI / 2);
-  const rimG = new THREE.CylinderGeometry(0.22, 0.22, 0.29, 6); rimG.rotateZ(Math.PI / 2);
+  const tyreG = new THREE.CylinderGeometry(0.34, 0.34, 0.31, 18); tyreG.rotateZ(Math.PI / 2);
+  const rimG = new THREE.CylinderGeometry(0.22, 0.22, 0.32, 6); rimG.rotateZ(Math.PI / 2);
   const tyreM = ghost ? paint : new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.85 });
   const rimM = ghost ? paint : new THREE.MeshStandardMaterial({ color: 0xb8bec6, roughness: 0.3, metalness: 0.9 });
   const wheels = [], pivots = [];
-  for (const [x, z, front] of [[0.82, 1.3, 1], [-0.82, 1.3, 1], [0.82, -1.42, 0], [-0.82, -1.42, 0]]) {
+  for (const [x, z, front] of [[0.86, 1.3, 1], [-0.86, 1.3, 1], [0.86, -1.42, 0], [-0.86, -1.42, 0]]) {
     const piv = new THREE.Group(); piv.position.set(x, 0.34, z); group.add(piv);
     const w = new THREE.Group(); piv.add(w);
     const t = new THREE.Mesh(tyreG, tyreM); t.castShadow = !ghost; w.add(t);
     const r = new THREE.Mesh(rimG, rimM); w.add(r);
     wheels.push(w); if (front) pivots.push(piv);
   }
-  return { group, body, wheels, pivots, tailM, headM };
+  // soft contact shadow so the car sits on the road
+  const blob = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 5.2), new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: ghost ? 0.25 : 0.75, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+  blob.rotation.x = -Math.PI / 2; blob.position.y = 0.03; blob.renderOrder = 1; group.add(blob);
+  let cockpit = null, steeringWheel = null;
+  if (!ghost) {
+    cockpit = new THREE.Group(); cockpit.visible = false; group.add(cockpit);
+    const trim = new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.85 });
+    const trim2 = new THREE.MeshStandardMaterial({ color: 0x575d66, roughness: 0.55, metalness: 0.2 });
+    const seatM = new THREE.MeshStandardMaterial({ color: 0x24272c, roughness: 0.95 });
+    const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); cockpit.add(m); return m; };
+    add(new THREE.BoxGeometry(1.76, 0.2, 0.55), trim, 0, 0.82, 0.62);                     // dashboard
+    add(new THREE.BoxGeometry(2.0, 0.06, 2.5), seatM, 0, 0.965, -0.3);                    // interior floor/tub covers the body top
+    add(new THREE.BoxGeometry(0.14, 0.2, 1.0), trim2, 0, 1.05, -0.2);                     // centre console
+    add(new THREE.BoxGeometry(1.76, 0.04, 0.5), trim, 0, 0.99, 0.7, -0.08);               // dash top
+    const gauge = canvasTex(128, 64, g => { g.fillStyle = '#0b0d10'; g.fillRect(0, 0, 128, 64); g.strokeStyle = '#f2a900'; g.lineWidth = 4; g.beginPath(); g.arc(40, 40, 24, Math.PI * 0.8, Math.PI * 2.2); g.stroke(); g.strokeStyle = '#eef1f4'; g.beginPath(); g.arc(92, 40, 20, Math.PI * 0.8, Math.PI * 2.2); g.stroke(); }, false);
+    add(new THREE.PlaneGeometry(0.4, 0.1), new THREE.MeshBasicMaterial({ map: gauge }), 0.38, 1.0, 0.47, -0.5, Math.PI);
+    add(new THREE.BoxGeometry(1.4, 0.05, 0.7), trim, 0, 1.36, -0.05);                      // roof lining edge
+    for (const sx of [1, -1]) {                                                            // A-pillars
+      const a = new THREE.Vector3(sx * 0.78, 0.98, 0.95), b = new THREE.Vector3(sx * 0.62, 1.36, 0.28);
+      const len = a.distanceTo(b), mid = a.clone().add(b).multiplyScalar(0.5);
+      const pil = add(new THREE.BoxGeometry(0.07, len, 0.07), trim, mid.x, mid.y, mid.z);
+      pil.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+      add(new THREE.BoxGeometry(0.06, 0.32, 1.4), trim2, sx * 0.9, 0.9, -0.1);             // door panel
+    }
+    const col = add(new THREE.CylinderGeometry(0.03, 0.04, 0.3, 8), trim, 0.38, 0.93, 0.5, Math.PI / 2 - 0.35);
+    const sw = new THREE.Group(); sw.position.set(0.38, 0.95, 0.38); sw.rotation.x = -0.35; cockpit.add(sw);
+    steeringWheel = new THREE.Group(); sw.add(steeringWheel);
+    const grip = new THREE.MeshStandardMaterial({ color: 0x26282c, roughness: 0.9 });
+    steeringWheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.165, 0.022, 10, 32), grip));
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.05, 16), trim2); hub.rotation.x = Math.PI / 2; steeringWheel.add(hub);
+    for (const ang of [0, Math.PI, -Math.PI / 2]) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 0.02), trim2); sp.position.set(Math.cos(ang) * 0.1, Math.sin(ang) * 0.1, 0); sp.rotation.z = ang; steeringWheel.add(sp); }
+    const mark = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.035, 0.05), new THREE.MeshBasicMaterial({ color: 0xf2a900 })); mark.position.set(0, 0.165, 0); steeringWheel.add(mark);
+    const gloveM = new THREE.MeshStandardMaterial({ color: CAR_COLORS[0] === color ? 0x2a2e35 : 0x2a2e35, roughness: 0.8 });
+    for (const sx of [1, -1]) { const gl = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), gloveM); gl.scale.set(1, 1.4, 1); gl.position.set(sx * 0.165, 0.02, -0.02); steeringWheel.add(gl); }
+    cockpit.traverse(m => { if (m.isMesh) { m.castShadow = false; } });
+  }
+  return { group, body, wheels, pivots, tailM, headM, cockpit, steeringWheel, cabin };
 }
 
 /* ================= SETTINGS ================= */
-const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, assist: 1, ghost: 1, sound: 1, invert: 0 }, store.get('settings', {}));
+const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0 }, store.get('settings', {}));
+if (!['easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
 const saveSettings = () => store.set('settings', settings);
 
 /* ================= INPUT ================= */
@@ -760,19 +802,21 @@ function physStep(c, inp, dt, locked) {
   const L = a + b;
   const v = Math.hypot(c.vx, c.vy);
   const ad = Math.abs(c.d), hw = track.hw;
-  let mu = 1.15, roll = 0.015, extraDrag = 0;
+  const E = settings.mode === 'easy', S = settings.mode === 'sim';
+  let mu = E ? 1.6 : S ? 1.15 : 1.25, roll = 0.015, extraDrag = 0;
   c.surf = 0;
-  if (ad > hw + 1.3) { mu = 0.62; roll = 0.06; extraDrag = 45; c.surf = 2; }
-  else if (ad > hw) { mu = 1.0; roll = 0.02; c.surf = track.kerb[c.idx] ? 1 : 2; if (c.surf === 2) { mu = 0.75; roll = 0.04; } }
+  if (ad > hw + 1.3) { mu = E ? 1.15 : 0.62; roll = E ? 0.03 : 0.06; extraDrag = E ? 12 : 45; c.surf = 2; }
+  else if (ad > hw) { mu = E ? 1.5 : 1.0; roll = 0.02; c.surf = track.kerb[c.idx] ? 1 : 2; if (c.surf === 2) { mu = E ? 1.2 : 0.75; roll = 0.04; } }
 
   // steering
-  const assist = settings.assist;
-  const maxSteer = assist ? lerp(0.52, 0.11, clamp(v / 52, 0, 1)) : lerp(0.58, 0.2, clamp(v / 70, 0, 1));
+  const assist = !S;
+  const maxSteer = E ? lerp(0.5, 0.15, clamp(v / 40, 0, 1)) : assist ? lerp(0.52, 0.11, clamp(v / 52, 0, 1)) : lerp(0.58, 0.2, clamp(v / 70, 0, 1));
   const target = inp.steer * maxSteer;
   c.delta += clamp(target - c.delta, -2.8 * dt, 2.8 * dt);
 
   // pedals & reverse logic
   let throttle = inp.gas, brake = inp.brake;
+  if (settings.autogas && brake < 0.05 && !inp.hand) throttle = Math.max(throttle, E ? 0.85 : 1);
   if (!c.rev && c.vx < 0.6 && brake > 0.2 && throttle < 0.05) { c.revHold += dt; if (c.revHold > 0.35) c.rev = true; } else if (!c.rev) c.revHold = 0;
   if (c.rev && throttle > 0.1 && c.vx > -0.4) { c.rev = false; c.revHold = 0; }
   let revDrive = 0;
@@ -800,7 +844,7 @@ function physStep(c, inp, dt, locked) {
   let drive = 0;
   if (!locked) {
     if (c.rev) drive = c.vx > -9 ? -3600 * revDrive : 0;
-    else if (c.shiftT <= 0) drive = throttle * torque(Math.max(c.rpm, 2400)) * GEARS[c.gear] * FINAL / RW * 0.88;
+    else if (c.shiftT <= 0) drive = throttle * torque(Math.max(c.rpm, 2400)) * GEARS[c.gear] * FINAL / RW * (E ? 0.6 : 0.88);
   }
   // brakes (ABS: capped at grip)
   const sgn = c.vx >= 0 ? 1 : -1;
@@ -838,6 +882,13 @@ function physStep(c, inp, dt, locked) {
   c.vx += (ax + c.r * c.vy) * dt;
   c.vy += (ay - c.r * c.vx) * dt;
   c.r += (a * (Fyf * cd + Fxf * sd) - b * Fyr) / Iz * dt;
+  // stability help: pull the car toward following the front wheels (strong for kids, light in normal)
+  if (!S) {
+    const kin = c.vx * Math.tan(c.delta) / L;
+    const k = E ? (inp.hand ? 0.02 : 0.12) : 0.015;
+    c.r = lerp(c.r, kin, k);
+    c.vy *= 1 - (E ? (inp.hand ? 0.006 : 0.05) : 0.004);
+  }
   // low-speed: blend toward kinematic model for stability
   const sp = Math.hypot(c.vx, c.vy);
   if (sp < 4) { const bl = (1 - sp / 4) * 0.35; c.r = lerp(c.r, c.vx * Math.tan(c.delta) / L, bl); c.vy *= 1 - bl * 0.5; }
@@ -865,8 +916,9 @@ function physStep(c, inp, dt, locked) {
     let wx = fx * c.vx + lx * c.vy, wz = fz * c.vx + lz * c.vy;
     const vn = (wx * nx + wz * nz) * s;
     if (vn > 0) {
-      wx -= nx * s * vn * 1.35; wz -= nz * s * vn * 1.35;
-      wx *= 0.93; wz *= 0.93;
+      const easyW = settings.mode === 'easy';
+      wx -= nx * s * vn * (easyW ? 1.15 : 1.35); wz -= nz * s * vn * (easyW ? 1.15 : 1.35);
+      wx *= easyW ? 0.98 : 0.93; wz *= easyW ? 0.98 : 0.93;
       c.vx = wx * fx + wz * fz; c.vy = wx * lx + wz * lz;
       c.r *= 0.6;
       if (vn > 2) { c.wallHit = Math.max(c.wallHit, clamp(vn / 15, 0.2, 1)); }
@@ -879,11 +931,12 @@ function physStep(c, inp, dt, locked) {
 let state = 'menu';
 let simT = 0, lapStart = 0, lap = 0, lapsTotal = 3, lapTimes = [], lastLap = null, halfway = false, countdownT = 0, raceStartT = 0, finishedT = 0;
 let bestLap = null, ghostBest = null, ghostRec = [], ghostRecT = 0;
-let camMode = 0; // 0 chase, 1 hood
+let camMode = settings.cam | 0; // 0 chase, 1 cockpit, 2 hood
+const CAM_NAMES = ['Za autem', 'Kokpit', 'Z kapoty'];
 let playerCar = null, ghostCar = null;
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
 
-function toggleCam() { camMode = (camMode + 1) % 2; }
+function toggleCam() { camMode = (camMode + 1) % 3; settings.cam = camMode; saveSettings(); document.querySelectorAll('#optCam button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === camMode))); if (state !== 'menu') toast(CAM_NAMES[camMode], 0.9); }
 
 function loadTrackGhost() {
   bestLap = store.get('best:' + settings.track, null);
@@ -998,6 +1051,7 @@ function syncCarVisual(dt) {
   playerCar.body.rotation.z = clamp(car.ayS * 0.012, -0.08, 0.08);
   playerCar.body.rotation.x = clamp(-car.axS * 0.005, -0.05, 0.05);
   for (const p of playerCar.pivots) p.rotation.y = car.delta;
+  if (playerCar.steeringWheel) playerCar.steeringWheel.rotation.z = -clamp(car.delta * 8, -2.6, 2.6);
   const spin = car.vx / P.RW * dt;
   playerCar.wheels.forEach((w, i) => { w.rotation.x += i >= 2 ? spin * (1 + car.spin * 2) : spin; });
   playerCar.tailM.emissiveIntensity = (input.brake > 0.05 && !car.rev) || (car.rev && input.gas > 0.05) ? 3 : 0.6;
@@ -1030,6 +1084,8 @@ function updateCamera(dt) {
     return;
   }
   const v = Math.hypot(car.vx, car.vy);
+  camera.near = 0.3;
+  if (playerCar.cockpit) { playerCar.cockpit.visible = camMode === 1; playerCar.cabin.visible = camMode !== 1; }
   if (camMode === 0) {
     // follow heading, slightly biased to velocity direction for drift readability
     let vh = car.h;
@@ -1043,6 +1099,15 @@ function updateCamera(dt) {
     camLook.set(car.x + Math.sin(ch) * 3, car.y + 0.9, car.z + Math.cos(ch) * 3);
     camera.lookAt(camLook);
     camera.fov = lerp(camera.fov, 60 + clamp(v, 0, 80) * 0.22, 1 - Math.exp(-dt * 3));
+  } else if (camMode === 1) {
+    const G = playerCar.group;
+    G.updateMatrixWorld();
+    camera.position.copy(G.localToWorld(camLook.set(0.38, 1.2, -0.2)));
+    if (car.surf && v > 5) camera.position.y += (Math.random() - 0.5) * 0.012;
+    camera.lookAt(G.localToWorld(camLook.set(0.38 + car.delta * 1.5, 0.75, 12)));
+    camera.fov = lerp(camera.fov, 70 + clamp(v, 0, 80) * 0.1, 1 - Math.exp(-dt * 3));
+    camera.near = 0.05; camera.updateProjectionMatrix();
+    return;
   } else {
     const y = car.y + 1.18;
     camera.position.set(car.x + fx * 0.1, y, car.z + fz * 0.1);
@@ -1138,7 +1203,9 @@ function showNotice(msg) { const n = $('#notice'); n.textContent = msg || ''; n.
 segBind('optCtrl', 'ctrl', v => { $('#invertRow').hidden = v !== 'tilt'; showNotice(''); });
 segBind('optInvert', 'invert');
 segBind('optLaps', 'laps');
-segBind('optAssist', 'assist');
+segBind('optMode', 'mode');
+segBind('optAutogas', 'autogas');
+segBind('optCam', 'cam', v => { camMode = v; });
 segBind('optGhost', 'ghost');
 segBind('optSound', 'sound', v => audio.setMuted(!v));
 $('#invertRow').hidden = settings.ctrl !== 'tilt';
@@ -1200,6 +1267,7 @@ function startFromMenu() {
 }
 $('#startBtn').addEventListener('click', startFromMenu);
 $('#pauseBtn').addEventListener('click', pauseGame);
+$('#camBtn').addEventListener('click', toggleCam);
 $('#pResume').addEventListener('click', resumeGame);
 $('#pRestart').addEventListener('click', () => { audio.setActive(true); restartRace(); });
 $('#pMenu').addEventListener('click', toMenu);
