@@ -22,4 +22,4 @@ a přidej ji na plochu.
 ## Ovládání
 
 - Klávesnice: šipky / WASD, mezerník ruční brzda, C kamera (také tlačítko Kamera na obrazovce), R zpět na trať, P pauza
-- DualSense: R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza (výchozí, lze změnit v menu)
+- Ovladač: levá páčka (osa 1) nahoru plyn, dolů brzda, pravá páčka (osa 2) řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza (výchozí, lze změnit v menu)

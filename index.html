@@ -57,7 +57,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .padbox #padLive{font-family:var(--display);font-variant-numeric:tabular-nums;color:var(--fg);min-height:1.5em}
 .padrows{display:grid;gap:6px;margin:8px 0 10px}
 .padrow{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px}
-.padrow>span:first-child{color:var(--muted)}
+.padrow>label{color:var(--muted)}
+.padrow select{min-width:0;width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel-solid);color:var(--fg);font:inherit;font-size:14px}
 .padrow b{font-family:var(--display);font-weight:700;font-size:16px}
 .padrow button,.ghostbtn{padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;font-size:13px}
 .padrow button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
@@ -166,7 +167,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     </section>
     <p id="notice" class="notice" hidden></p>
     <button id="startBtn" class="start">Start</button>
-    <p class="help"><b>Jízda:</b> Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>DualSense (výchozí):</b> R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. Tlačítka můžeš přeřadit výše. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
+    <p class="help"><b>Jízda:</b> Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>Ovladač (výchozí):</b> levá páčka nahoru plyn, dolů brzda, pravá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. Tlačítka můžeš přeřadit výše. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
   </div>
 </div>
 
@@ -766,9 +767,9 @@ function tiltPedals() {
 // gamepad with remappable bindings: {t:'b', i} = button, {t:'a', i, d} = axis in direction d
 const BTN_NAMES = ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Create', 'Options', 'L3', 'R3', 'D-pad ↑', 'D-pad ↓', 'D-pad ←', 'D-pad →', 'PS', 'Touchpad'];
 const AXIS_NAMES = ['Levá páčka', 'Levá páčka', 'Pravá páčka', 'Pravá páčka'];
-const DEFAULT_MAP = { steer: { t: 'a', i: 0, d: -1 }, gas: { t: 'b', i: 7 }, brake: { t: 'b', i: 6 }, hand: { t: 'b', i: 0 }, cam: { t: 'b', i: 3 }, reset: { t: 'b', i: 1 }, pause: { t: 'b', i: 9 } };
+const DEFAULT_MAP = { steer: { t: 'a', i: 2, d: -1 }, gas: { t: 'a', i: 1, d: -1 }, brake: { t: 'a', i: 1, d: 1 }, hand: { t: 'b', i: 0 }, cam: { t: 'b', i: 3 }, reset: { t: 'b', i: 1 }, pause: { t: 'b', i: 9 } };
 const ACTIONS = [['steer', 'Řízení'], ['gas', 'Plyn'], ['brake', 'Brzda'], ['hand', 'Ruční brzda'], ['cam', 'Kamera'], ['reset', 'Zpět na trať'], ['pause', 'Pauza']];
-let padMap = Object.assign({}, DEFAULT_MAP, store.get('padmap', {}));
+let padMap = Object.assign({}, DEFAULT_MAP, store.get('padmap2', {}));
 function bindLabel(b, key) {
   if (!b) return '–';
   if (b.t === 'b') return BTN_NAMES[b.i] || 'Tlačítko ' + (b.i + 1);
@@ -804,9 +805,9 @@ function pollGamepad() {
     const c = gp.capture;
     if (!c.base) c.base = { axes: p.axes.slice(), btn: p.buttons.map(x => x.pressed || x.value > 0.5) };
     let found = null;
-    p.axes.forEach((a, i) => { if (!found && Math.abs(a - (c.base.axes[i] || 0)) > 0.6 && Math.abs(a) > 0.6) found = { t: 'a', i, d: Math.sign(a) }; });
+    p.axes.forEach((a, i) => { const dv = a - (c.base.axes[i] || 0); if (!found && Math.abs(dv) > 0.5) found = { t: 'a', i, d: Math.sign(dv) }; });
     if (!found && c.key !== 'steer') p.buttons.forEach((x, i) => { if (!found && (x.pressed || x.value > 0.6) && !c.base.btn[i]) found = { t: 'b', i }; });
-    if (found) { padMap[c.key] = found; store.set('padmap', padMap); gp.capture = null; renderPadRows(); }
+    if (found) { padMap[c.key] = found; store.set('padmap2', padMap); gp.capture = null; renderPadRows(); }
     else if (performance.now() - c.t0 > 8000) { gp.capture = null; renderPadRows(); }
     gp.prev = p.buttons.map(x => x.pressed); ACTIONS.forEach(([k]) => gp.prevAct[k] = true);
     return;
@@ -867,7 +868,21 @@ function updatePadStatus(p) {
     $('#padLive').textContent = t;
   }
   const t = p ? 'Připojeno: ' + p.id.replace(/\s*\([^)]*\)\s*/g, ' ').trim() : 'Ovladač není připojený. Spáruj ho přes Bluetooth a stiskni na něm libovolné tlačítko, prohlížeč ho pak uvidí.';
-  if (t !== padStatusText) { padStatusText = t; $('#padStatus').textContent = t; }
+  if (t !== padStatusText) { padStatusText = t; $('#padStatus').textContent = t; if (!gp.capture) renderPadRows(); }
+}
+function bindKey(b) { return b ? (b.t === 'b' ? 'b' + b.i : 'a' + b.i + (b.d > 0 ? '+' : '-')) : ''; }
+function parseKey(k) { return k[0] === 'b' ? { t: 'b', i: +k.slice(1) } : { t: 'a', i: +k.slice(1, -1), d: k.slice(-1) === '+' ? 1 : -1 }; }
+const AXIS_DIR = [['←', '→'], ['↑', '↓'], ['←', '→'], ['↑', '↓']];
+function bindOptions(key) {
+  const nAx = Math.max(4, (gp.pad && gp.pad.axes.length) || 0), nBt = Math.max(18, (gp.pad && gp.pad.buttons.length) || 0);
+  const o = [];
+  for (let i = 0; i < nAx; i++) {
+    const nm = AXIS_NAMES[i] ? ' · ' + AXIS_NAMES[i] : '';
+    if (key === 'steer') { o.push(['a' + i + '-', 'Osa ' + i + nm + ' ←→'], ['a' + i + '+', 'Osa ' + i + nm + ' ←→ obráceně']); }
+    else { const dir = AXIS_DIR[i] || ['−', '+']; o.push(['a' + i + '-', 'Osa ' + i + nm + ' ' + dir[0]], ['a' + i + '+', 'Osa ' + i + nm + ' ' + dir[1]]); }
+  }
+  if (key !== 'steer') for (let i = 0; i < nBt; i++) o.push(['b' + i, 'Tlačítko ' + i + (BTN_NAMES[i] ? ' · ' + BTN_NAMES[i] : '')]);
+  return o;
 }
 function renderPadRows() {
   const box = $('#padRows');
@@ -875,11 +890,19 @@ function renderPadRows() {
   ACTIONS.forEach(([k, label]) => {
     const row = document.createElement('div'); row.className = 'padrow';
     const cap = gp.capture && gp.capture.key === k;
-    row.innerHTML = `<span>${label}</span><b></b><button aria-pressed="${cap}"></button>`;
-    row.querySelector('b').textContent = cap ? (k === 'steer' ? 'Pohni páčkou doleva…' : 'Stiskni tlačítko…') : bindLabel(padMap[k], k);
-    const btn = row.querySelector('button');
-    btn.textContent = cap ? 'Zrušit' : 'Změnit';
+    const lab = document.createElement('label'); lab.textContent = label; lab.htmlFor = 'pm_' + k;
+    const sel = document.createElement('select'); sel.id = 'pm_' + k;
+    const cur = bindKey(padMap[k]);
+    const opts = bindOptions(k);
+    if (!opts.some(x => x[0] === cur)) opts.unshift([cur, bindLabel(padMap[k], k)]);
+    for (const [v, t] of opts) { const op = document.createElement('option'); op.value = v; op.textContent = t; if (v === cur) op.selected = true; sel.appendChild(op); }
+    if (cap) { sel.disabled = true; const op = document.createElement('option'); op.textContent = k === 'steer' ? 'Pohni páčkou doleva…' : 'Stiskni tlačítko nebo pohni páčkou…'; op.selected = true; sel.prepend(op); }
+    sel.addEventListener('change', () => { padMap[k] = parseKey(sel.value); store.set('padmap2', padMap); });
+    const btn = document.createElement('button');
+    btn.setAttribute('aria-pressed', String(!!cap)); btn.textContent = cap ? 'Zrušit' : 'Zachytit';
+    btn.title = 'Stiskni tlačítko nebo pohni páčkou na ovladači';
     btn.addEventListener('click', () => { gp.capture = cap ? null : { key: k, t0: performance.now(), base: null }; renderPadRows(); });
+    row.append(lab, sel, btn);
     box.appendChild(row);
   });
 }
@@ -1374,7 +1397,7 @@ syncTiltRows();
   r.addEventListener('input', () => { settings.padSens = +r.value; saveSettings(); show(); });
 }
 renderPadRows();
-$('#padReset').addEventListener('click', () => { padMap = Object.assign({}, DEFAULT_MAP); store.set('padmap', padMap); gp.capture = null; renderPadRows(); });
+$('#padReset').addEventListener('click', () => { padMap = Object.assign({}, DEFAULT_MAP); store.set('padmap2', padMap); gp.capture = null; renderPadRows(); });
 addEventListener('keydown', e => { if (e.code === 'Escape' && gp.capture) { gp.capture = null; renderPadRows(); } });
 {
   const sw = $('#optColor');
