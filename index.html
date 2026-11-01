@@ -145,6 +145,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <div class="opt"><span>Ovládání</span><div class="seg" id="optCtrl"><button data-v="tilt">Náklon</button><button data-v="touch">Dotyk</button><button data-v="pad">Ovladač / klávesy</button></div></div>
       <div class="opt" id="tiltRow"><span>Citlivost náklonu</span><div class="range"><input type="range" id="optTilt" min="1" max="10" step="1" aria-label="Citlivost náklonu"><output id="optTiltVal" for="optTilt"></output></div></div>
       <div class="opt" id="invertRow"><span>Směr náklonu</span><div class="seg" id="optInvert"><button data-v="0">Normální</button><button data-v="1">Obrácený</button></div></div>
+      <div class="opt" id="pedalRow"><span>Plyn náklonem</span><div class="seg" id="optTiltPedals"><button data-v="0">Vypnutý</button><button data-v="1">Dopředu plyn, dozadu brzda</button></div></div>
       <div class="opt"><span>Počet kol</span><div class="seg" id="optLaps"><button data-v="3">3</button><button data-v="5">5</button><button data-v="0">Volná jízda</button></div></div>
       <div class="opt"><span>Barva vozu</span><div class="swatches" id="optColor"></div></div>
       <div class="opt"><span>Jízda</span><div class="seg" id="optMode"><button data-v="easy">Dětská</button><button data-v="normal">Normální</button><button data-v="sim">Realistická</button></div></div>
@@ -156,6 +157,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         <p class="help" id="padStatus">Ovladač není připojený.</p>
         <p class="help" id="padLive" aria-live="off"></p>
         <div class="padrows" id="padRows"></div>
+        <div class="opt" style="margin-bottom:10px"><span>Vibrace</span><div class="seg" id="optVibe"><button data-v="1">Zapnuté</button><button data-v="0">Vypnuté</button></div></div>
         <button class="ghostbtn" id="padReset">Obnovit výchozí</button>
       </details>
       <div class="opt"><span>Zvuk</span><div class="seg" id="optSound"><button data-v="1">Zapnutý</button><button data-v="0">Vypnutý</button></div></div>
@@ -677,7 +679,7 @@ function makeCar(color, ghost = false) {
 }
 
 /* ================= SETTINGS ================= */
-const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5 }, store.get('settings', {}));
+const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5, tiltPedals: 0, vibe: isIOS ? 0 : 1 }, store.get('settings', {}));
 if (!['easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
 const saveSettings = () => store.set('settings', settings);
 
@@ -714,7 +716,9 @@ function onMotion(e) {
   let sx;
   switch ((ang % 360 + 360) % 360) { case 90: sx = -g.y; break; case 180: sx = -g.x; break; case 270: sx = g.y; break; default: sx = g.x; }
   tiltRaw = sx;
+  tiltG.x = g.x; tiltG.y = g.y; tiltG.z = g.z || 0;
 }
+const tiltG = { x: 0, y: 0, z: 0 };
 function listenTilt() { if (!tiltListening) { addEventListener('devicemotion', onMotion); tiltListening = true; } }
 function requestTilt() {
   // must be called synchronously inside a user gesture
@@ -726,17 +730,36 @@ function requestTilt() {
   listenTilt();
   return Promise.resolve(true);
 }
-let tiltOffset = 0;
+let tiltOffset = 0, tiltG0 = null;
 const tiltDeg = () => 60 - (clamp(settings.tiltSens | 0, 1, 10) - 1) * 5; // sensitivity 1 = 60° for full lock, 10 = 15°
 function tiltSteer() {
-  const sign = (isIOS ? -1 : 1) * (settings.invert ? -1 : 1);
-  let v = sign * (tiltRaw - tiltOffset) / (9.81 * Math.sin(tiltDeg() * Math.PI / 180));
+  const inv = settings.invert ? -1 : 1;
+  let v;
+  const g0 = tiltG0, n0 = g0 ? Math.hypot(g0.x, g0.y) : 0;
+  if (n0 > 2.5) {
+    // "up" on the screen = calibrated gravity direction in the screen plane; steering = gravity along the perpendicular.
+    // The result does not depend on which way the browser thinks the screen is rotated, nor on the platform's sign convention.
+    const ax = g0.x / n0, ay = g0.y / n0;
+    v = inv * (tiltG.x * ay - tiltG.y * ax) / (9.81 * Math.sin(tiltDeg() * Math.PI / 180));
+  } else {
+    // device held almost flat: fall back to the reported screen orientation
+    v = inv * (isIOS ? -1 : 1) * (tiltRaw - tiltOffset) / (9.81 * Math.sin(tiltDeg() * Math.PI / 180));
+  }
   const dz = 0.05;
   v = Math.abs(v) < dz ? 0 : Math.sign(v) * (Math.abs(v) - dz) / (1 - dz);
   v = Math.sign(v) * Math.pow(Math.min(1, Math.abs(v)), 1.5); // gentle around the centre, full lock at the end
   return clamp(v, -1, 1);
 }
-function centerTilt() { tiltOffset = tiltRaw; }
+function centerTilt() { tiltOffset = tiltRaw; tiltG0 = { x: tiltG.x, y: tiltG.y, z: tiltG.z }; }
+// forward/back tilt relative to the calibrated pose: tip the top away = gas, toward you = brake
+function tiltPedals() {
+  const g0 = tiltG0; if (!g0) return [0, 0];
+  const th0 = Math.atan2(Math.hypot(g0.x, g0.y), Math.abs(g0.z));
+  const zs = Math.sign(g0.z) || 1;
+  const th = Math.atan2(Math.hypot(tiltG.x, tiltG.y), tiltG.z * zs);
+  const d = (th - th0) * 180 / Math.PI; // + = more upright (top toward you)
+  return [clamp((-d - 4) / 16, 0, 1), clamp((d - 4) / 14, 0, 1)];
+}
 
 // gamepad with remappable bindings: {t:'b', i} = button, {t:'a', i, d} = axis in direction d
 const BTN_NAMES = ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Create', 'Options', 'L3', 'R3', 'D-pad ↑', 'D-pad ↓', 'D-pad ←', 'D-pad →', 'PS', 'Touchpad'];
@@ -816,16 +839,11 @@ function pollGamepad() {
   }
   gp.prev = p.buttons.map(x => x.pressed);
 }
-// Safari can stop refreshing gamepad state; a zero-strength haptic call wakes it up again.
+// remember when the pad last sent new data (shown in the menu test line)
 gp.stampT = 0; gp.stamp = -1; gp.lastUse = 0; gp.wakeT = 0;
 gp.watchStamp = p => {
   const now = performance.now();
   if (p.timestamp !== gp.stamp) { gp.stamp = p.timestamp; gp.stampT = now; return; }
-  if (state !== 'race' && state !== 'countdown') return;
-  if (now - gp.stampT > 250 && now - gp.wakeT > 250) {
-    gp.wakeT = now;
-    for (const q of p.real) { const v = q.vibrationActuator; if (v && v.playEffect) { try { const r = v.playEffect('dual-rumble', { duration: 1, strongMagnitude: 0, weakMagnitude: 0 }); if (r && r.catch) r.catch(() => {}); } catch (e) {} } }
-  }
 };
 let padStatusText = '', padLiveT = 0;
 function updatePadStatus(p) {
@@ -861,7 +879,7 @@ function renderPadRows() {
   });
 }
 function rumble(strong, weak, ms) {
-  const p = gp.pad; if (!p || !p.real) return;
+  const p = gp.pad; if (!settings.vibe || !p || !p.real) return;
   for (const q of p.real) { const v = q.vibrationActuator; if (v && v.playEffect) { try { const r = v.playEffect('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); if (r && r.catch) r.catch(() => {}); } catch (e) {} } }
 }
 
@@ -879,6 +897,9 @@ function readInput(dt) {
   else { const rate = target === 0 ? 5 : (Math.sign(target) !== Math.sign(input.steer) && input.steer !== 0 ? 6 : 2.6); input.steer += clamp(target - input.steer, -rate * dt, rate * dt); }
   input.gas = Math.max(kb.ArrowUp || kb.KeyW ? 1 : 0, touch.gas, gp.gas);
   input.brake = Math.max(kb.ArrowDown || kb.KeyS ? 1 : 0, touch.brake, gp.brake);
+  if (settings.ctrl === 'tilt' && settings.tiltPedals && tiltSeen && performance.now() - (gp.lastUse || -1e9) > 4000) {
+    const [tg, tb] = tiltPedals(); input.gas = Math.max(input.gas, tg); input.brake = Math.max(input.brake, tb);
+  }
   input.hand = Math.max(kb.Space ? 1 : 0, gp.hand > 0.5 ? 1 : 0);
 }
 
@@ -1092,7 +1113,7 @@ function startRace() {
   simT = 0; lap = 0; lapTimes = []; lastLap = null; halfway = false;
   lapStart = 0; ghostRec = []; ghostRecT = 0;
   countdownT = 3.2; state = 'countdown';
-  if (settings.ctrl === 'tilt' && tiltSeen) { centerTilt(); toast('Drž zařízení v pozici pro jízdu rovně', 2.2); }
+  if (settings.ctrl === 'tilt' && tiltSeen) { centerTilt(); toast(settings.tiltPedals ? 'Drž zařízení v klidové pozici: rovně a bez plynu' : 'Drž zařízení v pozici pro jízdu rovně', 2.4); }
   $('#pCenter').hidden = settings.ctrl !== 'tilt';
   $('#menu').hidden = true; $('#results').hidden = true; $('#pause').hidden = true; $('#hud').hidden = false;
   const tui = $('#touchUI');
@@ -1318,7 +1339,9 @@ function segBind(id, key, onChange) {
   sync();
 }
 function showNotice(msg) { const n = $('#notice'); n.textContent = msg || ''; n.hidden = !msg; }
-const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = settings.ctrl !== 'tilt'; };
+const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = $('#pedalRow').hidden = settings.ctrl !== 'tilt'; };
+segBind('optTiltPedals', 'tiltPedals');
+segBind('optVibe', 'vibe');
 segBind('optCtrl', 'ctrl', v => { syncTiltRows(); showNotice(''); });
 segBind('optInvert', 'invert');
 segBind('optLaps', 'laps');
@@ -1373,7 +1396,12 @@ let starting = false;
 function startFromMenu(fromPad) {
   if (starting) return;
   audio.init(); audio.setMuted(!settings.sound);
-  if (settings.ctrl === 'tilt' && !(fromPad && !tiltListening)) {
+  if (fromPad && settings.ctrl !== 'pad') {
+    settings.ctrl = 'pad'; saveSettings();
+    $('#optCtrl').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === 'pad')));
+    syncTiltRows();
+  }
+  if (settings.ctrl === 'tilt') {
     starting = true;
     tiltSeen = false;
     requestTilt().then(ok => {
