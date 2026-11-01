@@ -54,6 +54,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .padbox{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .padbox summary{cursor:pointer;font-weight:600;font-size:15px}
 .padbox[open] summary{margin-bottom:8px}
+.padbox #padLive{font-family:var(--display);font-variant-numeric:tabular-nums;color:var(--fg);min-height:1.5em}
 .padrows{display:grid;gap:6px;margin:8px 0 10px}
 .padrow{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px}
 .padrow>span:first-child{color:var(--muted)}
@@ -153,6 +154,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <details class="padbox" id="padBox">
         <summary>Ovladač: přiřazení tlačítek</summary>
         <p class="help" id="padStatus">Ovladač není připojený.</p>
+        <p class="help" id="padLive" aria-live="off"></p>
         <div class="padrows" id="padRows"></div>
         <button class="ghostbtn" id="padReset">Obnovit výchozí</button>
       </details>
@@ -758,8 +760,17 @@ function bval(p, b) {
 }
 const gp = { active: false, steer: 0, gas: 0, brake: 0, hand: 0, prev: [], prevAct: {}, capture: null };
 function pollGamepad() {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  let p = null; for (const q of pads) if (q && q.connected) { p = q; break; }
+  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+  const list = pads.filter(q => q && q.connected);
+  // merge every connected pad, so a phantom device in slot 0 can't hide the real controller
+  let p = null;
+  if (list.length) {
+    p = { id: list.map(q => q.id).join(' + '), mapping: list[0].mapping, timestamp: Math.max(...list.map(q => q.timestamp || 0)), axes: [], buttons: [], real: list };
+    for (const q of list) {
+      q.axes.forEach((a, i) => { if (p.axes[i] === undefined || Math.abs(a) > Math.abs(p.axes[i])) p.axes[i] = a; });
+      q.buttons.forEach((b, i) => { const c = p.buttons[i] || { pressed: false, value: 0 }; p.buttons[i] = { pressed: c.pressed || b.pressed, value: Math.max(c.value, b.value || (b.pressed ? 1 : 0)) }; });
+    }
+  }
   updatePadStatus(p);
   if (!p) { gp.active = false; gp.gas = gp.brake = gp.steer = gp.hand = 0; return; }
   gp.pad = p;
@@ -781,7 +792,8 @@ function pollGamepad() {
   lx = Math.abs(lx) < 0.07 ? 0 : Math.sign(lx) * Math.pow((Math.abs(lx) - 0.07) / 0.93, 1.4);
   gp.steer = lx;
   gp.gas = bval(p, padMap.gas); gp.brake = bval(p, padMap.brake); gp.hand = bval(p, padMap.hand);
-  if (gp.gas > 0.02 || gp.brake > 0.02 || Math.abs(lx) > 0.1) gp.active = true;
+  if (gp.gas > 0.02 || gp.brake > 0.02 || Math.abs(lx) > 0.1 || p.buttons.some(x => x.pressed)) { gp.active = true; gp.lastUse = performance.now(); }
+  gp.watchStamp(p);
   const edge = i => pressed(i) && !gp.prev[i];
   const act = {}; ACTIONS.forEach(([k]) => { const now = bval(p, padMap[k]) > 0.5; act[k] = now && !gp.prevAct[k]; gp.prevAct[k] = now; });
   if (state === 'menu') {
@@ -789,7 +801,7 @@ function pollGamepad() {
     if (edge(14) || edge(4)) selectTrack((settings.track - 1 + TRACKS.length) % TRACKS.length);
     if (edge(13)) selectTrack((settings.track + 2) % TRACKS.length);
     if (edge(12)) selectTrack((settings.track - 2 + TRACKS.length) % TRACKS.length);
-    if (edge(0) || edge(9)) startFromMenu();
+    if (edge(0) || edge(9)) startFromMenu(true);
   } else if (state === 'race' || state === 'countdown') {
     if (act.pause) pauseGame();
     if (act.cam) toggleCam();
@@ -804,10 +816,34 @@ function pollGamepad() {
   }
   gp.prev = p.buttons.map(x => x.pressed);
 }
-let padStatusText = '';
+// Safari can stop refreshing gamepad state; a zero-strength haptic call wakes it up again.
+gp.stampT = 0; gp.stamp = -1; gp.lastUse = 0; gp.wakeT = 0;
+gp.watchStamp = p => {
+  const now = performance.now();
+  if (p.timestamp !== gp.stamp) { gp.stamp = p.timestamp; gp.stampT = now; return; }
+  if (state !== 'race' && state !== 'countdown') return;
+  if (now - gp.stampT > 250 && now - gp.wakeT > 250) {
+    gp.wakeT = now;
+    for (const q of p.real) { const v = q.vibrationActuator; if (v && v.playEffect) { try { const r = v.playEffect('dual-rumble', { duration: 1, strongMagnitude: 0, weakMagnitude: 0 }); if (r && r.catch) r.catch(() => {}); } catch (e) {} } }
+  }
+};
+let padStatusText = '', padLiveT = 0;
 function updatePadStatus(p) {
   if (state !== 'menu') return;
-  const t = p ? 'Připojeno: ' + p.id.replace(/\s*\(.*\)\s*$/, '') : 'Ovladač není připojený. Spáruj ho přes Bluetooth a stiskni na něm libovolné tlačítko, prohlížeč ho pak uvidí.';
+  const box = $('#padBox');
+  if (box.open && performance.now() - padLiveT > 100) {
+    padLiveT = performance.now();
+    let t = '';
+    if (p) {
+      const btns = p.buttons.map((b, i) => (b.pressed || b.value > 0.05) ? (BTN_NAMES[i] || '#' + i) + (b.value > 0 && b.value < 0.99 ? ' ' + b.value.toFixed(2) : '') : null).filter(Boolean);
+      const ax = p.axes.map((a, i) => Math.abs(a) > 0.1 ? 'osa ' + i + ': ' + a.toFixed(2) : null).filter(Boolean);
+      const age = ((performance.now() - gp.stampT) / 1000);
+      t = 'Test: ' + (btns.concat(ax).join(' · ') || 'nic nestisknuto') + ' | mapování: ' + (p.mapping || 'žádné') + ' | ovladačů: ' + p.real.length + ' | poslední data před ' + (gp.stampT ? age.toFixed(1) : '–') + ' s';
+      gp.watchStamp(p);
+    }
+    $('#padLive').textContent = t;
+  }
+  const t = p ? 'Připojeno: ' + p.id.replace(/\s*\([^)]*\)\s*/g, ' ').trim() : 'Ovladač není připojený. Spáruj ho přes Bluetooth a stiskni na něm libovolné tlačítko, prohlížeč ho pak uvidí.';
   if (t !== padStatusText) { padStatusText = t; $('#padStatus').textContent = t; }
 }
 function renderPadRows() {
@@ -825,8 +861,8 @@ function renderPadRows() {
   });
 }
 function rumble(strong, weak, ms) {
-  const p = gp.pad; if (!p || !p.vibrationActuator) return;
-  try { p.vibrationActuator.playEffect('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); } catch (e) {}
+  const p = gp.pad; if (!p || !p.real) return;
+  for (const q of p.real) { const v = q.vibrationActuator; if (v && v.playEffect) { try { const r = v.playEffect('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); if (r && r.catch) r.catch(() => {}); } catch (e) {} } }
 }
 
 const input = { steer: 0, gas: 0, brake: 0, hand: 0 };
@@ -835,7 +871,7 @@ function readInput(dt) {
   const touchSteer = touch.left - touch.right;
   let target = 0, analog = false;
   if (Math.abs(gp.steer) > 0.001) { target = gp.steer; analog = true; }
-  else if (settings.ctrl === 'tilt' && tiltSeen) { target = tiltSteer(); analog = true; }
+  else if (settings.ctrl === 'tilt' && tiltSeen && performance.now() - (gp.lastUse || -1e9) > 4000) { target = tiltSteer(); analog = true; }
   else if (touchSteer) target = touchSteer;
   else target = kbSteer;
   const tiltNow = analog && Math.abs(gp.steer) <= 0.001;
@@ -1334,10 +1370,10 @@ function selectTrack(i) {
 }
 
 let starting = false;
-function startFromMenu() {
+function startFromMenu(fromPad) {
   if (starting) return;
   audio.init(); audio.setMuted(!settings.sound);
-  if (settings.ctrl === 'tilt') {
+  if (settings.ctrl === 'tilt' && !(fromPad && !tiltListening)) {
     starting = true;
     tiltSeen = false;
     requestTilt().then(ok => {
@@ -1357,7 +1393,7 @@ function startFromMenu() {
   }
   audio.setActive(true); startRace();
 }
-$('#startBtn').addEventListener('click', startFromMenu);
+$('#startBtn').addEventListener('click', () => startFromMenu(false));
 $('#pauseBtn').addEventListener('click', pauseGame);
 $('#camBtn').addEventListener('click', toggleCam);
 $('#pResume').addEventListener('click', resumeGame);
@@ -1368,6 +1404,7 @@ $('#rAgain').addEventListener('click', () => { audio.setActive(true); restartRac
 $('#rMenu').addEventListener('click', toMenu);
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('pointerdown', () => { try { window.focus(); } catch (e) {} if (state !== 'menu') audio.init(); }, true);
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 /* ================= LOOP ================= */
