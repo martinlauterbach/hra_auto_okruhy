@@ -6,7 +6,7 @@
 - low-poly model auta, fyzika s modelem pneumatik, automatická převodovka
 - ovládání: náklon (iPad), dotyk, DualSense přes Gamepad API, klávesnice
 - časomíra kol, duch nejlepšího kola, minimapa, zvuk motoru
-- tři úrovně jízdy (Dětská, Normální, Realistická) a volitelný automatický plyn
+- čtyři úrovně jízdy (Nejlehčí, Dětská, Normální, Realistická) a volitelný automatický plyn
 - nastavitelná citlivost náklonu (1–10), automatické vycentrování na startu
 - vlastní přiřazení tlačítek a páček ovladače (ukládá se v prohlížeči)
 - kamery: za autem, kokpit s otáčejícím se volantem, z kapoty

@@ -151,7 +151,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <div class="opt" id="pedalRow"><span>Plyn náklonem</span><div class="seg" id="optTiltPedals"><button data-v="0">Vypnutý</button><button data-v="1">Dopředu plyn, dozadu brzda</button></div></div>
       <div class="opt"><span>Počet kol</span><div class="seg" id="optLaps"><button data-v="3">3</button><button data-v="5">5</button><button data-v="0">Volná jízda</button></div></div>
       <div class="opt"><span>Barva vozu</span><div class="swatches" id="optColor"></div></div>
-      <div class="opt"><span>Jízda</span><div class="seg" id="optMode"><button data-v="easy">Dětská</button><button data-v="normal">Normální</button><button data-v="sim">Realistická</button></div></div>
+      <div class="opt"><span>Jízda</span><div class="seg" id="optMode"><button data-v="super">Nejlehčí</button><button data-v="easy">Dětská</button><button data-v="normal">Normální</button><button data-v="sim">Realistická</button></div></div>
       <div class="opt"><span>Plyn</span><div class="seg" id="optAutogas"><button data-v="0">Ovládám sám</button><button data-v="1">Automaticky</button></div></div>
       <div class="opt"><span>Kamera</span><div class="seg" id="optCam"><button data-v="0">Za autem</button><button data-v="1">Kokpit s volantem</button><button data-v="2">Z kapoty</button></div></div>
       <div class="opt"><span>Duch</span><div class="seg" id="optGhost"><button data-v="1">Ukázat nejlepší kolo</button><button data-v="0">Skrýt</button></div></div>
@@ -167,7 +167,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     </section>
     <p id="notice" class="notice" hidden></p>
     <button id="startBtn" class="start">Start</button>
-    <p class="help"><b>Jízda:</b> Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>Ovladač (výchozí):</b> levá páčka nahoru plyn, dolů brzda, pravá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. Tlačítka můžeš přeřadit výše. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
+    <p class="help"><b>Jízda:</b> Nejlehčí: auto se od svodidel odrazí zpět na trať a nejde ho otočit do protisměru. Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>Ovladač (výchozí):</b> levá páčka nahoru plyn, dolů brzda, pravá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. Tlačítka můžeš přeřadit výše. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
   </div>
 </div>
 
@@ -683,7 +683,7 @@ function makeCar(color, ghost = false) {
 
 /* ================= SETTINGS ================= */
 const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5, tiltPedals: 0, vibe: isIOS ? 0 : 1, touchPos: Math.min(screen.width, screen.height) >= 600 ? 'mid' : 'low', padSens: 3 }, store.get('settings', {}));
-if (!['easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
+if (!['super', 'easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
 const saveSettings = () => store.set('settings', settings);
 
 /* ================= INPUT ================= */
@@ -970,10 +970,10 @@ function physStep(c, inp, dt, locked) {
   const L = a + b;
   const v = Math.hypot(c.vx, c.vy);
   const ad = Math.abs(c.d), hw = track.hw;
-  const E = settings.mode === 'easy', S = settings.mode === 'sim';
+  const SE = settings.mode === 'super', E = SE || settings.mode === 'easy', S = settings.mode === 'sim';
   let mu = E ? 1.6 : S ? 1.15 : 1.25, roll = 0.015, extraDrag = 0;
   c.surf = 0;
-  if (ad > hw + 1.3) { mu = E ? 1.15 : 0.62; roll = E ? 0.03 : 0.06; extraDrag = E ? 12 : 45; c.surf = 2; }
+  if (ad > hw + 1.3) { mu = SE ? 1.5 : E ? 1.15 : 0.62; roll = SE ? 0.02 : E ? 0.03 : 0.06; extraDrag = SE ? 0 : E ? 12 : 45; c.surf = 2; }
   else if (ad > hw) { mu = E ? 1.5 : 1.0; roll = 0.02; c.surf = track.kerb[c.idx] ? 1 : 2; if (c.surf === 2) { mu = E ? 1.2 : 0.75; roll = 0.04; } }
 
   // steering
@@ -1012,7 +1012,7 @@ function physStep(c, inp, dt, locked) {
   let drive = 0;
   if (!locked) {
     if (c.rev) drive = c.vx > -9 ? -3600 * revDrive : 0;
-    else if (c.shiftT <= 0) drive = throttle * torque(Math.max(c.rpm, 2400)) * GEARS[c.gear] * FINAL / RW * (E ? 0.6 : 0.88);
+    else if (c.shiftT <= 0) drive = throttle * torque(Math.max(c.rpm, 2400)) * GEARS[c.gear] * FINAL / RW * (SE ? 0.5 : E ? 0.6 : 0.88);
   }
   // brakes (ABS: capped at grip)
   const sgn = c.vx >= 0 ? 1 : -1;
@@ -1085,14 +1085,49 @@ function physStep(c, inp, dt, locked) {
     const vn = (wx * nx + wz * nz) * s;
     if (vn > 0) {
       const easyW = settings.mode === 'easy';
-      wx -= nx * s * vn * (easyW ? 1.15 : 1.35); wz -= nz * s * vn * (easyW ? 1.15 : 1.35);
-      wx *= easyW ? 0.98 : 0.93; wz *= easyW ? 0.98 : 0.93;
+      const bounce = SE ? 1.5 : easyW ? 1.15 : 1.35, keep = SE ? 1 : easyW ? 0.98 : 0.93;
+      wx -= nx * s * vn * bounce; wz -= nz * s * vn * bounce;
+      wx *= keep; wz *= keep;
       c.vx = wx * fx + wz * fz; c.vy = wx * lx + wz * lz;
-      c.r *= 0.6;
-      if (vn > 2) { c.wallHit = Math.max(c.wallHit, clamp(vn / 15, 0.2, 1)); }
+      c.r *= SE ? 0 : 0.6;
+      if (vn > 2) { c.wallHit = Math.max(c.wallHit, clamp(vn / 15, 0.2, 1) * (SE ? 0.5 : 1)); }
     }
   }
+  if (SE) superGuard(c, dt);
   return prevIdx;
+}
+
+// "Nejlehčí": the car can't face the wrong way and a soft cushion in front of the barriers pushes it back onto the road
+function superGuard(c, dt) {
+  const T = track, i = c.idx;
+  const lim = T.wallD - 1.0, soft = T.hw + 0.5;   // cushion starts just past the road edge
+  const ad = Math.abs(c.d), side = Math.sign(c.d) || 1;
+  const close = clamp((ad - soft) / (lim - soft), 0, 1);
+  const th = Math.atan2(T.TX[i], T.TZ[i]);
+  const dh = Math.atan2(Math.sin(c.h - th), Math.cos(c.h - th)); // + = pointing left of the track direction
+  // allowed angle: never more than ~60° off the track; toward the nearby barrier it shrinks to slightly away from it
+  const towardWall = Math.sign(dh) === side;
+  const maxA = towardWall ? lerp(1.05, -0.15, close) : 1.05;
+  if (Math.abs(dh) > maxA || (towardWall && maxA < 0)) {
+    const target = Math.sign(dh || side) * maxA;
+    const corr = target - dh;
+    c.h += clamp(corr, -4 * dt, 4 * dt);           // rotating the body also rotates its velocity along the track
+    c.r *= 0.8;
+  }
+  if (ad > soft) {
+    const nx = T.TZ[i], nz = -T.TX[i];
+    const fx = Math.sin(c.h), fz = Math.cos(c.h), lx = Math.cos(c.h), lz = -Math.sin(c.h);
+    let wx = fx * c.vx + lx * c.vy, wz = fz * c.vx + lz * c.vy;
+    const sp = Math.hypot(wx, wz);
+    const vn = (wx * nx + wz * nz) * side;          // speed toward the wall
+    if (vn > 0) { wx -= nx * side * vn * 0.2 * close; wz -= nz * side * vn * 0.2 * close; }
+    const push = close * 6 * dt;                     // gentle spring back toward the road
+    wx -= nx * side * push; wz -= nz * side * push;
+    // keep the speed: what was lost sideways goes into moving along the track
+    const sp2 = Math.hypot(wx, wz);
+    if (sp2 > 0.01 && sp > sp2) { wx *= sp / sp2; wz *= sp / sp2; }
+    c.vx = wx * fx + wz * fz; c.vy = wx * lx + wz * lz;
+  }
 }
 
 /* ================= GAME STATE ================= */
