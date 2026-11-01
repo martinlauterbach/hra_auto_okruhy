@@ -682,7 +682,7 @@ function makeCar(color, ghost = false) {
 }
 
 /* ================= SETTINGS ================= */
-const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5, tiltPedals: 0, vibe: isIOS ? 0 : 1, touchPos: Math.min(screen.width, screen.height) >= 600 ? 'mid' : 'low', padSens: 5 }, store.get('settings', {}));
+const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5, tiltPedals: 0, vibe: isIOS ? 0 : 1, touchPos: Math.min(screen.width, screen.height) >= 600 ? 'mid' : 'low', padSens: 3 }, store.get('settings', {}));
 if (!['easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
 const saveSettings = () => store.set('settings', settings);
 
@@ -817,7 +817,8 @@ function pollGamepad() {
   let lx = sb && sb.t === 'a' ? (p.axes[sb.i] || 0) * sb.d : 0;
   // sensitivity 1..10: lower = softer curve around the centre and less lock at full deflection, higher = sharper
   const ps = clamp(settings.padSens | 0, 1, 10);
-  const expo = 1.4 + (5 - ps) * 0.15, gain = 1 + (ps - 5) * 0.06;
+  const tq = (ps - 1) / 9;
+  const expo = lerp(2.6, 1.0, tq), gain = lerp(0.35, 1.3, tq);
   lx = Math.abs(lx) < 0.07 ? 0 : Math.sign(lx) * Math.min(1, gain * Math.pow((Math.abs(lx) - 0.07) / 0.93, expo));
   gp.steer = lx;
   gp.gas = bval(p, padMap.gas); gp.brake = bval(p, padMap.brake); gp.hand = bval(p, padMap.hand);
@@ -921,7 +922,9 @@ function readInput(dt) {
   else if (touchSteer) target = touchSteer;
   else target = kbSteer;
   const tiltNow = analog && Math.abs(gp.steer) <= 0.001;
-  if (analog) input.steer = lerp(input.steer, target, 1 - Math.exp(-dt * (tiltNow ? 9 : 18)));
+  // stick: how fast the wheel follows the stick also depends on sensitivity (low = calm, high = instant)
+  const padRate = lerp(4, 18, (clamp(settings.padSens | 0, 1, 10) - 1) / 9);
+  if (analog) input.steer = lerp(input.steer, target, 1 - Math.exp(-dt * (tiltNow ? 9 : padRate)));
   else { const rate = target === 0 ? 5 : (Math.sign(target) !== Math.sign(input.steer) && input.steer !== 0 ? 6 : 2.6); input.steer += clamp(target - input.steer, -rate * dt, rate * dt); }
   input.gas = Math.max(kb.ArrowUp || kb.KeyW ? 1 : 0, touch.gas, gp.gas);
   input.brake = Math.max(kb.ArrowDown || kb.KeyS ? 1 : 0, touch.brake, gp.brake);
@@ -1392,7 +1395,7 @@ syncTiltRows();
 }
 {
   const r = $('#optPadSens'), out = $('#optPadSensVal');
-  const show = () => { const ps = settings.padSens; out.textContent = ps + (ps < 5 ? ' · jemnější' : ps > 5 ? ' · ostřejší' : ' · výchozí'); };
+  const show = () => { const ps = settings.padSens; out.textContent = ps + ' · plná páčka = ' + Math.round(Math.min(1, lerp(0.35, 1.3, (ps - 1) / 9)) * 100) + ' % rejdu'; };
   r.value = settings.padSens; show();
   r.addEventListener('input', () => { settings.padSens = +r.value; saveSettings(); show(); });
 }
