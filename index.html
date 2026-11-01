@@ -87,7 +87,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #toast{position:absolute;top:28%;left:50%;transform:translateX(-50%);font-size:28px;font-weight:700;text-align:center;text-shadow:0 2px 12px rgba(0,0,0,.6);opacity:0;transition:opacity .3s}
 #toast.show{opacity:1}
 #touchUI{position:absolute;inset:0}
-#touchUI button{pointer-events:auto;position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);border-radius:16px;border:2px solid rgba(255,255,255,.28);background:rgba(10,12,15,.35);font-family:var(--display);font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.06em;touch-action:none;-webkit-tap-highlight-color:transparent}
+#touchUI button{pointer-events:auto;position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + var(--tb,18px));border-radius:16px;border:2px solid rgba(255,255,255,.28);background:rgba(10,12,15,.35);font-family:var(--display);font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.06em;touch-action:none;-webkit-tap-highlight-color:transparent}
 #touchUI button.on{background:rgba(255,255,255,.28)}
 #tGas{right:calc(env(safe-area-inset-right,0px) + 18px);width:120px;height:170px;border-color:rgba(242,169,0,.7)!important}
 #tBrake{width:110px;height:120px}
@@ -145,6 +145,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <div class="opt"><span>Ovládání</span><div class="seg" id="optCtrl"><button data-v="tilt">Náklon</button><button data-v="touch">Dotyk</button><button data-v="pad">Ovladač / klávesy</button></div></div>
       <div class="opt" id="tiltRow"><span>Citlivost náklonu</span><div class="range"><input type="range" id="optTilt" min="1" max="10" step="1" aria-label="Citlivost náklonu"><output id="optTiltVal" for="optTilt"></output></div></div>
       <div class="opt" id="invertRow"><span>Směr náklonu</span><div class="seg" id="optInvert"><button data-v="0">Normální</button><button data-v="1">Obrácený</button></div></div>
+      <div class="opt" id="touchPosRow"><span>Tlačítka na obrazovce</span><div class="seg" id="optTouchPos"><button data-v="low">Dole</button><button data-v="mid">Uprostřed</button><button data-v="high">Výš</button></div></div>
       <div class="opt" id="pedalRow"><span>Plyn náklonem</span><div class="seg" id="optTiltPedals"><button data-v="0">Vypnutý</button><button data-v="1">Dopředu plyn, dozadu brzda</button></div></div>
       <div class="opt"><span>Počet kol</span><div class="seg" id="optLaps"><button data-v="3">3</button><button data-v="5">5</button><button data-v="0">Volná jízda</button></div></div>
       <div class="opt"><span>Barva vozu</span><div class="swatches" id="optColor"></div></div>
@@ -679,7 +680,7 @@ function makeCar(color, ghost = false) {
 }
 
 /* ================= SETTINGS ================= */
-const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5, tiltPedals: 0, vibe: isIOS ? 0 : 1 }, store.get('settings', {}));
+const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5, tiltPedals: 0, vibe: isIOS ? 0 : 1, touchPos: Math.min(screen.width, screen.height) >= 600 ? 'mid' : 'low' }, store.get('settings', {}));
 if (!['easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
 const saveSettings = () => store.set('settings', settings);
 
@@ -1339,7 +1340,12 @@ function segBind(id, key, onChange) {
   sync();
 }
 function showNotice(msg) { const n = $('#notice'); n.textContent = msg || ''; n.hidden = !msg; }
-const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = $('#pedalRow').hidden = settings.ctrl !== 'tilt'; };
+const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = $('#pedalRow').hidden = settings.ctrl !== 'tilt'; $('#touchPosRow').hidden = settings.ctrl === 'pad'; };
+// height of the on-screen buttons; capped so they never collide with the minimap on short (phone) screens
+const TOUCH_POS = { low: '18px', mid: 'clamp(18px, calc(50% - 110px), calc(100% - 360px))', high: 'clamp(18px, calc(62% - 110px), calc(100% - 360px))' };
+const applyTouchPos = () => $('#touchUI').style.setProperty('--tb', TOUCH_POS[settings.touchPos] || TOUCH_POS.low);
+segBind('optTouchPos', 'touchPos', applyTouchPos);
+applyTouchPos();
 segBind('optTiltPedals', 'tiltPedals');
 segBind('optVibe', 'vibe');
 segBind('optCtrl', 'ctrl', v => { syncTiltRows(); showNotice(''); });
