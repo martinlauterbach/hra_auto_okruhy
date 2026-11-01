@@ -7,6 +7,8 @@
 - ovládání: náklon (iPad), dotyk, DualSense přes Gamepad API, klávesnice
 - časomíra kol, duch nejlepšího kola, minimapa, zvuk motoru
 - tři úrovně jízdy (Dětská, Normální, Realistická) a volitelný automatický plyn
+- nastavitelná citlivost náklonu (1–10), automatické vycentrování na startu
+- vlastní přiřazení tlačítek a páček ovladače (ukládá se v prohlížeči)
 - kamery: za autem, kokpit s otáčejícím se volantem, z kapoty
 
 ## Spuštění
@@ -20,4 +22,4 @@ a přidej ji na plochu.
 ## Ovládání
 
 - Klávesnice: šipky / WASD, mezerník ruční brzda, C kamera (také tlačítko Kamera na obrazovce), R zpět na trať, P pauza
-- DualSense: R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza
+- DualSense: R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza (výchozí, lze změnit v menu)

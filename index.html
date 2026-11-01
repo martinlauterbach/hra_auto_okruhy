@@ -48,6 +48,18 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .start{margin-top:4px;padding:14px 18px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.06em;text-transform:uppercase;font-style:italic}
 .help{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 .help b{color:var(--fg);font-weight:600}
+.range{display:flex;align-items:center;gap:10px;min-width:0}
+.range input{flex:1;min-width:0;accent-color:var(--accent)}
+.range output{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.padbox{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.padbox summary{cursor:pointer;font-weight:600;font-size:15px}
+.padbox[open] summary{margin-bottom:8px}
+.padrows{display:grid;gap:6px;margin:8px 0 10px}
+.padrow{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px}
+.padrow>span:first-child{color:var(--muted)}
+.padrow b{font-family:var(--display);font-weight:700;font-size:16px}
+.padrow button,.ghostbtn{padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;font-size:13px}
+.padrow button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
 .notice{margin:0;padding:10px 12px;border-radius:8px;background:rgba(229,50,45,.14);border:1px solid rgba(229,50,45,.45);font-size:14px;line-height:1.45}
 @media (max-width:560px){.tracks{grid-template-columns:minmax(0,1fr)}.opt{grid-template-columns:minmax(0,1fr)}}
 
@@ -130,6 +142,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <section class="opts">
       <h2 class="sec-label" style="margin:0">Nastavení</h2>
       <div class="opt"><span>Ovládání</span><div class="seg" id="optCtrl"><button data-v="tilt">Náklon</button><button data-v="touch">Dotyk</button><button data-v="pad">Ovladač / klávesy</button></div></div>
+      <div class="opt" id="tiltRow"><span>Citlivost náklonu</span><div class="range"><input type="range" id="optTilt" min="1" max="10" step="1" aria-label="Citlivost náklonu"><output id="optTiltVal" for="optTilt"></output></div></div>
       <div class="opt" id="invertRow"><span>Směr náklonu</span><div class="seg" id="optInvert"><button data-v="0">Normální</button><button data-v="1">Obrácený</button></div></div>
       <div class="opt"><span>Počet kol</span><div class="seg" id="optLaps"><button data-v="3">3</button><button data-v="5">5</button><button data-v="0">Volná jízda</button></div></div>
       <div class="opt"><span>Barva vozu</span><div class="swatches" id="optColor"></div></div>
@@ -137,11 +150,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <div class="opt"><span>Plyn</span><div class="seg" id="optAutogas"><button data-v="0">Ovládám sám</button><button data-v="1">Automaticky</button></div></div>
       <div class="opt"><span>Kamera</span><div class="seg" id="optCam"><button data-v="0">Za autem</button><button data-v="1">Kokpit s volantem</button><button data-v="2">Z kapoty</button></div></div>
       <div class="opt"><span>Duch</span><div class="seg" id="optGhost"><button data-v="1">Ukázat nejlepší kolo</button><button data-v="0">Skrýt</button></div></div>
+      <details class="padbox" id="padBox">
+        <summary>Ovladač: přiřazení tlačítek</summary>
+        <p class="help" id="padStatus">Ovladač není připojený.</p>
+        <div class="padrows" id="padRows"></div>
+        <button class="ghostbtn" id="padReset">Obnovit výchozí</button>
+      </details>
       <div class="opt"><span>Zvuk</span><div class="seg" id="optSound"><button data-v="1">Zapnutý</button><button data-v="0">Vypnutý</button></div></div>
     </section>
     <p id="notice" class="notice" hidden></p>
     <button id="startBtn" class="start">Start</button>
-    <p class="help"><b>Jízda:</b> Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>DualSense:</b> R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
+    <p class="help"><b>Jízda:</b> Dětská drží auto na stopě a nedá se snadno roztočit, Realistická nemá žádné asistenty. Při automatickém plynu auto jede samo a ty jen zatáčíš a brzdíš.<br><b>DualSense (výchozí):</b> R2 plyn, L2 brzda, levá páčka řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza. Tlačítka můžeš přeřadit výše. V menu D-pad vybírá okruh a ✕ startuje.<br><b>Klávesnice:</b> šipky nebo WASD, mezerník ruční brzda, C kamera, R zpět na trať, P pauza.</p>
   </div>
 </div>
 
@@ -149,6 +168,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="card">
     <h2>Pauza</h2>
     <button id="pResume" class="primary">Pokračovat</button>
+    <button id="pCenter" hidden>Vycentrovat náklon</button>
     <button id="pRestart">Restart</button>
     <button id="pMenu">Zpět do menu</button>
     <div class="kbd">Ovladač: ✕ pokračovat · □ restart · ○ menu</div>
@@ -655,7 +675,7 @@ function makeCar(color, ghost = false) {
 }
 
 /* ================= SETTINGS ================= */
-const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0 }, store.get('settings', {}));
+const settings = Object.assign({ track: 0, ctrl: hasTouch ? 'tilt' : 'pad', laps: 3, color: 0, mode: 'normal', autogas: 0, cam: 0, ghost: 1, sound: 1, invert: 0, tiltSens: 5 }, store.get('settings', {}));
 if (!['easy', 'normal', 'sim'].includes(settings.mode)) settings.mode = 'normal';
 const saveSettings = () => store.set('settings', settings);
 
@@ -704,27 +724,66 @@ function requestTilt() {
   listenTilt();
   return Promise.resolve(true);
 }
+let tiltOffset = 0;
+const tiltDeg = () => 60 - (clamp(settings.tiltSens | 0, 1, 10) - 1) * 5; // sensitivity 1 = 60° for full lock, 10 = 15°
 function tiltSteer() {
   const sign = (isIOS ? -1 : 1) * (settings.invert ? -1 : 1);
-  let v = sign * tiltRaw / (9.81 * Math.sin(26 * Math.PI / 180));
-  if (Math.abs(v) < 0.04) v = 0;
+  let v = sign * (tiltRaw - tiltOffset) / (9.81 * Math.sin(tiltDeg() * Math.PI / 180));
+  const dz = 0.05;
+  v = Math.abs(v) < dz ? 0 : Math.sign(v) * (Math.abs(v) - dz) / (1 - dz);
+  v = Math.sign(v) * Math.pow(Math.min(1, Math.abs(v)), 1.5); // gentle around the centre, full lock at the end
   return clamp(v, -1, 1);
 }
+function centerTilt() { tiltOffset = tiltRaw; }
 
-// gamepad
-const gp = { active: false, steer: 0, gas: 0, brake: 0, hand: 0, prev: [] };
+// gamepad with remappable bindings: {t:'b', i} = button, {t:'a', i, d} = axis in direction d
+const BTN_NAMES = ['✕', '○', '□', '△', 'L1', 'R1', 'L2', 'R2', 'Create', 'Options', 'L3', 'R3', 'D-pad ↑', 'D-pad ↓', 'D-pad ←', 'D-pad →', 'PS', 'Touchpad'];
+const AXIS_NAMES = ['Levá páčka', 'Levá páčka', 'Pravá páčka', 'Pravá páčka'];
+const DEFAULT_MAP = { steer: { t: 'a', i: 0, d: -1 }, gas: { t: 'b', i: 7 }, brake: { t: 'b', i: 6 }, hand: { t: 'b', i: 0 }, cam: { t: 'b', i: 3 }, reset: { t: 'b', i: 1 }, pause: { t: 'b', i: 9 } };
+const ACTIONS = [['steer', 'Řízení'], ['gas', 'Plyn'], ['brake', 'Brzda'], ['hand', 'Ruční brzda'], ['cam', 'Kamera'], ['reset', 'Zpět na trať'], ['pause', 'Pauza']];
+let padMap = Object.assign({}, DEFAULT_MAP, store.get('padmap', {}));
+function bindLabel(b, key) {
+  if (!b) return '–';
+  if (b.t === 'b') return BTN_NAMES[b.i] || 'Tlačítko ' + (b.i + 1);
+  const n = AXIS_NAMES[b.i] || 'Osa ' + (b.i + 1);
+  if (key === 'steer') return n + ' ←→';
+  const vert = b.i % 2 === 1;
+  return n + ' ' + (vert ? (b.d > 0 ? '↓' : '↑') : (b.d > 0 ? '→' : '←'));
+}
+function bval(p, b) {
+  if (!b) return 0;
+  if (b.t === 'b') { const x = p.buttons[b.i]; return x ? (x.value || (x.pressed ? 1 : 0)) : 0; }
+  const v = (p.axes[b.i] || 0) * b.d;
+  return v > 0.15 ? (v - 0.15) / 0.85 : 0;
+}
+const gp = { active: false, steer: 0, gas: 0, brake: 0, hand: 0, prev: [], prevAct: {}, capture: null };
 function pollGamepad() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   let p = null; for (const q of pads) if (q && q.connected) { p = q; break; }
+  updatePadStatus(p);
   if (!p) { gp.active = false; gp.gas = gp.brake = gp.steer = gp.hand = 0; return; }
   gp.pad = p;
-  const b = i => (p.buttons[i] ? (p.buttons[i].value || (p.buttons[i].pressed ? 1 : 0)) : 0);
+  // waiting for the player to press something to assign
+  if (gp.capture) {
+    const c = gp.capture;
+    if (!c.base) c.base = { axes: p.axes.slice(), btn: p.buttons.map(x => x.pressed || x.value > 0.5) };
+    let found = null;
+    p.axes.forEach((a, i) => { if (!found && Math.abs(a - (c.base.axes[i] || 0)) > 0.6 && Math.abs(a) > 0.6) found = { t: 'a', i, d: Math.sign(a) }; });
+    if (!found && c.key !== 'steer') p.buttons.forEach((x, i) => { if (!found && (x.pressed || x.value > 0.6) && !c.base.btn[i]) found = { t: 'b', i }; });
+    if (found) { padMap[c.key] = found; store.set('padmap', padMap); gp.capture = null; renderPadRows(); }
+    else if (performance.now() - c.t0 > 8000) { gp.capture = null; renderPadRows(); }
+    gp.prev = p.buttons.map(x => x.pressed); ACTIONS.forEach(([k]) => gp.prevAct[k] = true);
+    return;
+  }
   const pressed = i => p.buttons[i] && p.buttons[i].pressed;
-  let lx = p.axes[0] || 0; lx = Math.abs(lx) < 0.07 ? 0 : Math.sign(lx) * Math.pow((Math.abs(lx) - 0.07) / 0.93, 1.4);
-  gp.steer = -lx;
-  gp.gas = b(7); gp.brake = b(6); gp.hand = b(0);
+  const sb = padMap.steer;
+  let lx = sb && sb.t === 'a' ? (p.axes[sb.i] || 0) * sb.d : 0;
+  lx = Math.abs(lx) < 0.07 ? 0 : Math.sign(lx) * Math.pow((Math.abs(lx) - 0.07) / 0.93, 1.4);
+  gp.steer = lx;
+  gp.gas = bval(p, padMap.gas); gp.brake = bval(p, padMap.brake); gp.hand = bval(p, padMap.hand);
   if (gp.gas > 0.02 || gp.brake > 0.02 || Math.abs(lx) > 0.1) gp.active = true;
   const edge = i => pressed(i) && !gp.prev[i];
+  const act = {}; ACTIONS.forEach(([k]) => { const now = bval(p, padMap[k]) > 0.5; act[k] = now && !gp.prevAct[k]; gp.prevAct[k] = now; });
   if (state === 'menu') {
     if (edge(15) || edge(5)) selectTrack((settings.track + 1) % TRACKS.length);
     if (edge(14) || edge(4)) selectTrack((settings.track - 1 + TRACKS.length) % TRACKS.length);
@@ -732,11 +791,11 @@ function pollGamepad() {
     if (edge(12)) selectTrack((settings.track - 2 + TRACKS.length) % TRACKS.length);
     if (edge(0) || edge(9)) startFromMenu();
   } else if (state === 'race' || state === 'countdown') {
-    if (edge(9)) pauseGame();
-    if (edge(3)) toggleCam();
-    if (edge(1) && state === 'race') resetToTrack();
+    if (act.pause) pauseGame();
+    if (act.cam) toggleCam();
+    if (act.reset && state === 'race') resetToTrack();
   } else if (state === 'paused') {
-    if (edge(0) || edge(9)) resumeGame();
+    if (edge(0) || act.pause) resumeGame();
     if (edge(2)) restartRace();
     if (edge(1)) toMenu();
   } else if (state === 'finished') {
@@ -744,6 +803,26 @@ function pollGamepad() {
     if (edge(1)) toMenu();
   }
   gp.prev = p.buttons.map(x => x.pressed);
+}
+let padStatusText = '';
+function updatePadStatus(p) {
+  if (state !== 'menu') return;
+  const t = p ? 'Připojeno: ' + p.id.replace(/\s*\(.*\)\s*$/, '') : 'Ovladač není připojený. Spáruj ho přes Bluetooth a stiskni na něm libovolné tlačítko, prohlížeč ho pak uvidí.';
+  if (t !== padStatusText) { padStatusText = t; $('#padStatus').textContent = t; }
+}
+function renderPadRows() {
+  const box = $('#padRows');
+  box.innerHTML = '';
+  ACTIONS.forEach(([k, label]) => {
+    const row = document.createElement('div'); row.className = 'padrow';
+    const cap = gp.capture && gp.capture.key === k;
+    row.innerHTML = `<span>${label}</span><b></b><button aria-pressed="${cap}"></button>`;
+    row.querySelector('b').textContent = cap ? (k === 'steer' ? 'Pohni páčkou doleva…' : 'Stiskni tlačítko…') : bindLabel(padMap[k], k);
+    const btn = row.querySelector('button');
+    btn.textContent = cap ? 'Zrušit' : 'Změnit';
+    btn.addEventListener('click', () => { gp.capture = cap ? null : { key: k, t0: performance.now(), base: null }; renderPadRows(); });
+    box.appendChild(row);
+  });
 }
 function rumble(strong, weak, ms) {
   const p = gp.pad; if (!p || !p.vibrationActuator) return;
@@ -759,7 +838,8 @@ function readInput(dt) {
   else if (settings.ctrl === 'tilt' && tiltSeen) { target = tiltSteer(); analog = true; }
   else if (touchSteer) target = touchSteer;
   else target = kbSteer;
-  if (analog) input.steer = lerp(input.steer, target, 1 - Math.exp(-dt * 18));
+  const tiltNow = analog && Math.abs(gp.steer) <= 0.001;
+  if (analog) input.steer = lerp(input.steer, target, 1 - Math.exp(-dt * (tiltNow ? 9 : 18)));
   else { const rate = target === 0 ? 5 : (Math.sign(target) !== Math.sign(input.steer) && input.steer !== 0 ? 6 : 2.6); input.steer += clamp(target - input.steer, -rate * dt, rate * dt); }
   input.gas = Math.max(kb.ArrowUp || kb.KeyW ? 1 : 0, touch.gas, gp.gas);
   input.brake = Math.max(kb.ArrowDown || kb.KeyS ? 1 : 0, touch.brake, gp.brake);
@@ -976,6 +1056,8 @@ function startRace() {
   simT = 0; lap = 0; lapTimes = []; lastLap = null; halfway = false;
   lapStart = 0; ghostRec = []; ghostRecT = 0;
   countdownT = 3.2; state = 'countdown';
+  if (settings.ctrl === 'tilt' && tiltSeen) { centerTilt(); toast('Drž zařízení v pozici pro jízdu rovně', 2.2); }
+  $('#pCenter').hidden = settings.ctrl !== 'tilt';
   $('#menu').hidden = true; $('#results').hidden = true; $('#pause').hidden = true; $('#hud').hidden = false;
   const tui = $('#touchUI');
   tui.hidden = !(settings.ctrl === 'tilt' || settings.ctrl === 'touch');
@@ -1200,7 +1282,8 @@ function segBind(id, key, onChange) {
   sync();
 }
 function showNotice(msg) { const n = $('#notice'); n.textContent = msg || ''; n.hidden = !msg; }
-segBind('optCtrl', 'ctrl', v => { $('#invertRow').hidden = v !== 'tilt'; showNotice(''); });
+const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = settings.ctrl !== 'tilt'; };
+segBind('optCtrl', 'ctrl', v => { syncTiltRows(); showNotice(''); });
 segBind('optInvert', 'invert');
 segBind('optLaps', 'laps');
 segBind('optMode', 'mode');
@@ -1208,7 +1291,16 @@ segBind('optAutogas', 'autogas');
 segBind('optCam', 'cam', v => { camMode = v; });
 segBind('optGhost', 'ghost');
 segBind('optSound', 'sound', v => audio.setMuted(!v));
-$('#invertRow').hidden = settings.ctrl !== 'tilt';
+syncTiltRows();
+{
+  const r = $('#optTilt'), out = $('#optTiltVal');
+  const show = () => { out.textContent = settings.tiltSens + ' · plný rejd při ' + tiltDeg() + '°'; };
+  r.value = settings.tiltSens; show();
+  r.addEventListener('input', () => { settings.tiltSens = +r.value; saveSettings(); show(); });
+}
+renderPadRows();
+$('#padReset').addEventListener('click', () => { padMap = Object.assign({}, DEFAULT_MAP); store.set('padmap', padMap); gp.capture = null; renderPadRows(); });
+addEventListener('keydown', e => { if (e.code === 'Escape' && gp.capture) { gp.capture = null; renderPadRows(); } });
 {
   const sw = $('#optColor');
   CAR_COLORS.forEach((c, i) => { const b = document.createElement('button'); b.style.background = '#' + new THREE.Color(c).getHexString(); b.setAttribute('aria-label', 'Barva ' + (i + 1)); b.addEventListener('click', () => { setCarColor(i); sw.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', String(j === i))); }); sw.appendChild(b); });
@@ -1254,7 +1346,7 @@ function startFromMenu() {
         if (!ok || !tiltSeen) {
           settings.ctrl = 'touch'; saveSettings();
           $('#optCtrl').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === 'touch')));
-          $('#invertRow').hidden = true;
+          syncTiltRows();
           showNotice(ok ? 'Senzor náklonu na této stránce neposílá data, proto jsem přepnul na dotykové ovládání. Naklánění funguje, když hru otevřeš jako samostatnou stránku přes HTTPS.' : 'Přístup k náklonu nebyl povolen, proto jsem přepnul na dotykové ovládání.');
           return;
         }
@@ -1269,6 +1361,7 @@ $('#startBtn').addEventListener('click', startFromMenu);
 $('#pauseBtn').addEventListener('click', pauseGame);
 $('#camBtn').addEventListener('click', toggleCam);
 $('#pResume').addEventListener('click', resumeGame);
+$('#pCenter').addEventListener('click', () => { centerTilt(); toast('Náklon vycentrován', 1.2); });
 $('#pRestart').addEventListener('click', () => { audio.setActive(true); restartRace(); });
 $('#pMenu').addEventListener('click', toMenu);
 $('#rAgain').addEventListener('click', () => { audio.setActive(true); restartRace(); });
