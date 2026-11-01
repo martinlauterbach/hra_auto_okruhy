@@ -143,6 +143,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <section class="opts">
       <h2 class="sec-label" style="margin:0">Nastavení</h2>
       <div class="opt"><span>Ovládání</span><div class="seg" id="optCtrl"><button data-v="tilt">Náklon</button><button data-v="touch">Dotyk</button><button data-v="pad">Ovladač / klávesy</button></div></div>
+      <div class="opt" id="padSensRow"><span>Citlivost řízení</span><div class="range"><input type="range" id="optPadSens" min="1" max="10" step="1" aria-label="Citlivost řízení ovladačem"><output id="optPadSensVal" for="optPadSens"></output></div></div>
       <div class="opt" id="tiltRow"><span>Citlivost náklonu</span><div class="range"><input type="range" id="optTilt" min="1" max="10" step="1" aria-label="Citlivost náklonu"><output id="optTiltVal" for="optTilt"></output></div></div>
       <div class="opt" id="invertRow"><span>Směr náklonu</span><div class="seg" id="optInvert"><button data-v="0">Normální</button><button data-v="1">Obrácený</button></div></div>
       <div class="opt" id="touchPosRow"><span>Tlačítka na obrazovce</span><div class="seg" id="optTouchPos"><button data-v="low">Dole</button><button data-v="mid">Uprostřed</button><button data-v="high">Výš</button></div></div>
@@ -158,7 +159,6 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         <p class="help" id="padStatus">Ovladač není připojený.</p>
         <p class="help" id="padLive" aria-live="off"></p>
         <div class="padrows" id="padRows"></div>
-        <div class="opt" style="margin-bottom:10px"><span>Citlivost řízení</span><div class="range"><input type="range" id="optPadSens" min="1" max="10" step="1" aria-label="Citlivost řízení ovladačem"><output id="optPadSensVal" for="optPadSens"></output></div></div>
         <div class="opt" style="margin-bottom:10px"><span>Vibrace</span><div class="seg" id="optVibe"><button data-v="1">Zapnuté</button><button data-v="0">Vypnuté</button></div></div>
         <button class="ghostbtn" id="padReset">Obnovit výchozí</button>
       </details>
@@ -1344,7 +1344,7 @@ function segBind(id, key, onChange) {
   sync();
 }
 function showNotice(msg) { const n = $('#notice'); n.textContent = msg || ''; n.hidden = !msg; }
-const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = $('#pedalRow').hidden = settings.ctrl !== 'tilt'; $('#touchPosRow').hidden = settings.ctrl === 'pad'; };
+const syncTiltRows = () => { $('#invertRow').hidden = $('#tiltRow').hidden = $('#pedalRow').hidden = settings.ctrl !== 'tilt'; $('#touchPosRow').hidden = settings.ctrl === 'pad'; $('#padSensRow').hidden = settings.ctrl !== 'pad'; };
 // height of the on-screen buttons; capped so they never collide with the minimap on short (phone) screens
 const TOUCH_POS = { low: '18px', mid: 'clamp(18px, calc(50% - 110px), calc(100% - 360px))', high: 'clamp(18px, calc(62% - 110px), calc(100% - 360px))' };
 const applyTouchPos = () => $('#touchUI').style.setProperty('--tb', TOUCH_POS[settings.touchPos] || TOUCH_POS.low);
