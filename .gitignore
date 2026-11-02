@@ -1,1 +1,7 @@
 .DS_Store
+tools/lib/
+tools/three/
+tools/*.mpd
+tools/car_parts.json
+tools/car_brick.b64
+tools/preview.png

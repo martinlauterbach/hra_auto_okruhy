@@ -3,7 +3,7 @@
 3D závodní hra v prohlížeči (Three.js), jeden soubor `index.html`.
 
 - 10 okruhů generovaných z kontrolních bodů (Catmull-Rom křivky)
-- low-poly model auta, fyzika s modelem pneumatik, automatická převodovka
+- dva vozy: kostičkový (model LDraw 1496) a low-poly sportovní, fyzika s modelem pneumatik, automatická převodovka
 - ovládání: náklon (iPad), dotyk, DualSense přes Gamepad API, klávesnice
 - časomíra kol, duch nejlepšího kola, minimapa, zvuk motoru
 - čtyři úrovně jízdy (Nejlehčí, Dětská, Normální, Realistická) a volitelný automatický plyn
@@ -23,3 +23,8 @@ a přidej ji na plochu.
 
 - Klávesnice: šipky / WASD, mezerník ruční brzda, C kamera (také tlačítko Kamera na obrazovce), R zpět na trať, P pauza
 - Ovladač: levá páčka (osa 1) nahoru plyn, dolů brzda, pravá páčka (osa 2) řízení, ✕ ruční brzda, △ kamera, ○ zpět na trať, Options pauza (výchozí, lze změnit v menu)
+
+## Kostičkový vůz
+
+Model `model/1496-1.mpd` z LDraw.org (autor Robert Paciorek [bercik], podle Zoltank82),
+díly z knihovny LDraw.org. Licence CCAL 2.0. Postup převodu do hry je v `tools/README.md`.

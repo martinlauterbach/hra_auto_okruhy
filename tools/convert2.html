@@ -1,0 +1,50 @@
+<!doctype html><html><body style="margin:0">
+<script type="importmap">{"imports":{"three":"./three/build/three.module.js","three/addons/":"./three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { LDrawLoader } from 'three/addons/loaders/LDrawLoader.js';
+const loader = new LDrawLoader();
+loader.setPartsLibraryPath('lib/');
+await loader.preloadMaterials('lib/LDConfig.ldr');
+const group = await loader.loadAsync('car_fixed.mpd');
+group.rotation.x = Math.PI;
+group.updateMatrixWorld(true);
+const partOf = o => { let q = o; while (q && !(q.userData && q.userData.fileName && /\.dat$/i.test(q.userData.fileName) && q.parent && /\.ldr$/i.test(q.parent.userData.fileName || ''))) q = q.parent; return q; };
+const out = { body: new Map(), driver: new Map(), wheels: new Map() };
+const tmp = new THREE.Vector3();
+group.traverse(o => {
+  if (!o.isMesh) return;
+  const part = partOf(o); if (!part) return;
+  const pname = part.userData.fileName.toLowerCase();
+  const sub = part.parent.userData.fileName.toLowerCase();
+  let bucket, key2 = '';
+  if (/^(3641|4624)/.test(pname)) { part.getWorldPosition(tmp); key2 = [tmp.x, tmp.y, tmp.z].map(v => Math.round(v / 6)).join(','); bucket = 'wheels'; }
+  else bucket = sub.includes('driver') ? 'driver' : 'body';
+  const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+  g.applyMatrix4(o.matrixWorld);
+  const mats = Array.isArray(o.material) ? o.material : [o.material];
+  const groups = g.groups.length ? g.groups : [{ start: 0, count: Infinity, materialIndex: 0 }];
+  for (const gr of groups) {
+    const m = mats[gr.materialIndex]; if (!m) continue;
+    const key = key2 + '|' + m.color.getHexString() + '|' + (m.transparent ? m.opacity.toFixed(2) : '1');
+    const M = out[bucket];
+    if (!M.has(key)) M.set(key, { wheel: key2, color: '#' + m.color.getHexString(), opacity: m.transparent ? +m.opacity.toFixed(2) : 1, p: [], n: [] });
+    const e = M.get(key);
+    const P = g.attributes.position.array, N = g.attributes.normal.array;
+    const cnt = Math.min(gr.count, g.attributes.position.count - gr.start);
+    for (let i = gr.start; i < gr.start + cnt; i++) { e.p.push(P[i*3], P[i*3+1], P[i*3+2]); e.n.push(N[i*3], N[i*3+1], N[i*3+2]); }
+  }
+});
+window.RESULT = { body: [...out.body.values()], driver: [...out.driver.values()], wheels: [...out.wheels.values()] };
+// preview render
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(900, 400); document.body.appendChild(r.domElement);
+r.setClearColor(0xdde4ea);
+const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2)); const dl = new THREE.DirectionalLight(0xffffff, 2); dl.position.set(200, 300, 150); sc.add(dl);
+const g2 = group.clone(); sc.add(g2);
+const box = new THREE.Box3().setFromObject(group); const ctr = box.getCenter(new THREE.Vector3());
+const views = [[1,0.25,0],[0.7,0.45,0.7]];
+const cams = views.map(v => { const c = new THREE.PerspectiveCamera(30, 450/400, 1, 5000); c.position.copy(ctr).add(new THREE.Vector3(...v).normalize().multiplyScalar(600)); c.lookAt(ctr); return c; });
+r.setScissorTest(true);
+cams.forEach((c, i) => { r.setViewport(i*450, 0, 450, 400); r.setScissor(i*450, 0, 450, 400); r.render(sc, c); });
+window.DONE = true;
+</script></body></html>
