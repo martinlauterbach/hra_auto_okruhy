@@ -1,0 +1,56 @@
+<!doctype html><html><body style="margin:0">
+<script type="importmap">{"imports":{"three":"./three/build/three.module.js","three/addons/":"./three/examples/jsm/"}}</script>
+<script type="module">
+// Generic LDraw -> game converter. Usage: convert3.html?m=model.ldr
+import * as THREE from 'three';
+import { LDrawLoader } from 'three/addons/loaders/LDrawLoader.js';
+const model = new URLSearchParams(location.search).get('m');
+// rotating wheel parts (tyres, rims, wheel+tyre assemblies) and minifigure parts
+const WHEEL = /^(3641|4624|6014|6015|30027|30028|30648|30285|50944|50945|51011|55981|55982|56890|56891|56902|56904|58088|58090|2346|3482|3483|4084|6248|42610|86652|87697|18976|18977|30699|35578|87414|93594|93595|11208|11209|13971|15413)([a-z]\w*)?(c\d+)?\.dat$/;
+const MINIFIG = /^(3626|3624|3842|3833|3834|3844|3901|4485|973|970|971|972|981|982|983|3815|3816|3817|3818|3819|3820|30170|30171|2446|87994|93219|15851)/;
+const loader = new LDrawLoader();
+loader.setPartsLibraryPath('lib/');
+await loader.preloadMaterials('lib/LDConfig.ldr');
+const group = await loader.loadAsync(model);
+group.rotation.x = Math.PI;
+group.updateMatrixWorld(true);
+// a "part" = an object loaded from a .dat file whose parent is not a .dat (i.e. placed by the model)
+const isDat = o => o && o.userData && /\.dat( copy)?$/i.test(o.userData.fileName || '');
+const partOf = o => { let q = o, best = null; while (q) { if (isDat(q) && !isDat(q.parent)) best = q; q = q.parent; } return best; };
+const out = { body: new Map(), driver: new Map(), wheels: new Map() };
+const tmp = new THREE.Vector3();
+group.traverse(o => {
+  if (!o.isMesh) return;
+  const part = partOf(o); if (!part) return;
+  const pname = part.userData.fileName.toLowerCase().replace(/ copy$/, '');
+  let bucket, wk = '';
+  if (WHEEL.test(pname)) { part.getWorldPosition(tmp); wk = [tmp.x, tmp.y, tmp.z].map(v => v.toFixed(1)).join(','); bucket = 'wheels'; }
+  else if (MINIFIG.test(pname)) bucket = 'driver';
+  else bucket = 'body';
+  const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+  g.applyMatrix4(o.matrixWorld);
+  const mats = Array.isArray(o.material) ? o.material : [o.material];
+  const groups = g.groups.length ? g.groups : [{ start: 0, count: Infinity, materialIndex: 0 }];
+  for (const gr of groups) {
+    const m = mats[gr.materialIndex]; if (!m) continue;
+    const key = wk + '|' + m.color.getHexString() + '|' + (m.transparent ? m.opacity.toFixed(2) : '1');
+    const M = out[bucket];
+    if (!M.has(key)) M.set(key, { wheel: wk, color: '#' + m.color.getHexString(), opacity: m.transparent ? +m.opacity.toFixed(2) : 1, p: [], n: [] });
+    const e = M.get(key);
+    const P = g.attributes.position.array, N = g.attributes.normal.array;
+    const cnt = Math.min(gr.count, g.attributes.position.count - gr.start);
+    for (let i = gr.start; i < gr.start + cnt; i++) { e.p.push(P[i*3], P[i*3+1], P[i*3+2]); e.n.push(N[i*3], N[i*3+1], N[i*3+2]); }
+  }
+});
+window.RESULT = { body: [...out.body.values()], driver: [...out.driver.values()], wheels: [...out.wheels.values()] };
+// preview: side, 3/4 and top views
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(1200, 400); document.body.appendChild(r.domElement);
+r.setClearColor(0xdde4ea);
+const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2)); const dl = new THREE.DirectionalLight(0xffffff, 2); dl.position.set(200, 300, 150); sc.add(dl);
+sc.add(group.clone());
+const box = new THREE.Box3().setFromObject(group); const ctr = box.getCenter(new THREE.Vector3());
+const views = [[0,0.25,1],[0.7,0.45,0.7],[0.01,1,0.01]];
+r.setScissorTest(true);
+views.forEach((v, i) => { const c = new THREE.PerspectiveCamera(30, 1, 1, 5000); c.position.copy(ctr).add(new THREE.Vector3(...v).normalize().multiplyScalar(700)); c.lookAt(ctr); r.setViewport(i*400, 0, 400, 400); r.setScissor(i*400, 0, 400, 400); r.render(sc, c); });
+window.DONE = true;
+</script></body></html>

@@ -9,8 +9,8 @@ def refs(text):
         if len(t)>=15 and t[0]=='1':
             out.append(' '.join(t[14:]).replace('\\','/').lower())
     return out
-mpd=open('1496-1.mpd').read()
-local=set(m.lower() for m in re.findall(r'^0 FILE (.+)$', mpd, re.M))
+mpd=open(sys.argv[1] if len(sys.argv)>1 else '1496-1.mpd').read()
+local=set(m.lower().strip() for m in re.findall(r'^0 FILE (.+)$', mpd, re.M))
 local={x.strip() for x in local}
 seen=set(); found={}; missing=[]
 def fetch(name):

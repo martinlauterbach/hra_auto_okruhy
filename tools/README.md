@@ -1,16 +1,21 @@
-# Převod LDraw modelu do hry
+# Převod LDraw modelů do hry
 
-Kostičkový vůz je v `index.html` uložený jako komprimovaná data (`<script id="brickCar">`).
-Tyto skripty ho vyrobí z `model/1496-1.mpd`. Spouštěj je ze složky `tools`.
+Kostičková auta jsou v `index.html` uložená jako komprimovaná data
+(`<script id="carRally">` a `<script id="carPolice">`). Tyto skripty je vyrobí z modelů ve složce `model/`.
+Spouštěj je ze složky `tools`.
 
-1. `cp ../model/1496-1.mpd .` (skripty čekají model v aktuální složce)
-2. `python3 fetchparts.py` stáhne jen potřebné díly LDraw do `lib/`
+1. Zkopíruj model sem, např. `cp ../model/policie.ldr .`
+2. `python3 fetchparts.py policie.ldr` stáhne jen potřebné díly LDraw do `lib/`
    (zdroj: zrcadlo knihovny LDraw na GitHubu, gkjohnson/ldraw-parts-library)
-3. `python3 fixtilt.py` srovná díly pootočené o ~4° a uloží `car_fixed.mpd`
+3. Jen pro model 1496: `python3 fixtilt.py` srovná díly pootočené o ~4° a uloží `car_fixed.mpd`
 4. Three.js 0.160 rozbal do `three/` (`npm pack three@0.160.0` a rozbalit `package` jako `three`)
-5. `python3 server.py &` a `node run2.js` (potřebuje Playwright) načte model přes LDrawLoader,
-   oddělí kola a řidiče a uloží `car_parts.json` a náhled `preview.png`
-6. `node pack.js` vytvoří `car_brick.b64`, jehož obsah se vloží do `<script id="brickCar">` v `index.html`
+5. `python3 server.py &` a `node run3.js policie.ldr police` (potřebuje Playwright)
+   načte model přes LDrawLoader, oddělí kola a panáčka a uloží `police_parts.json` a náhled `police_preview.png`
+6. `node pack2.js police_parts.json police.b64 '{"name":"Policie","paint":null}'` vytvoří data,
+   jejichž obsah se vloží do odpovídajícího `<script id="...">` v `index.html`.
+   `paint` je barva kostek (hex z LDConfig), které se ve hře přebarví vybranou barvou vozu, nebo `null`.
 
-Pro jiný model stačí vyměnit soubor `.mpd` v krocích 1–3. Skripty počítají s tím, že kola tvoří díly
-3641 (pneumatika) a 4624 (disk) a řidič je v podsouboru, jehož název obsahuje „driver“.
+Skript sám zjistí, podél které osy auto stojí a kde má předek (podle žlutých předních nebo červených
+zadních světel). Kola pozná podle čísel dílů (pneumatiky a disky, seznam `WHEEL` v `convert3.html`),
+panáčka podle dílů minifigurky (seznam `MINIFIG`). Modré průhledné kostky (Trans_Dark_Blue) ve hře blikají jako majáky.
+Starší skripty `convert2.html`, `run2.js` a `pack.js` jsou původní verze jen pro model 1496.
